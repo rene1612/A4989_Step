@@ -133,10 +133,29 @@ unsigned char process_pcf8575(void)
 {
 	uint8_t temp_port;
 	unsigned int pcf8575_io_mask;
+	unsigned char temp[2];
+
+	GICR &= ~_BV(INT1);						//INT1 off
 	
 	//Interrupt ist aufgelaufen, zuerst Portexpander lesen
 	//Portexpander lesen Eingänge(Encoder) abfragen
-	pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
+	pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)temp);
+
+	do {
+		_delay_us(500);
+		pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
+
+		if(pcf8575.port[0]!=temp[0] || pcf8575.port[1]!=temp[1])
+		{
+			temp[0]=pcf8575.port[0];
+			temp[1]=pcf8575.port[1];
+		}
+		else
+			break;
+	}
+	while (1);
+	
+	//pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
 
 	//prüfen, welcher Encoder geändert wurde
 	
@@ -171,6 +190,8 @@ unsigned char process_pcf8575(void)
 		temp_port |= (encoder.val.sync_rect_mode & 0x01);
 		PORTA = temp_port;
 	}
+
+	GICR |= _BV(INT1);						//INT1 activate
 	
 	return TRUE;
 }
