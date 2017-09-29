@@ -40,10 +40,17 @@
 
  #define PROCESS_PCF8575		0x01
  #define PROCESS_MONITOR_STATE	0x02
+ #define PROCESS_STEP_ENABLE	0x04
+
+
+
+#define TIMER0_250_MS (F_CPU/256/256/4)
+
 
 /**
  * Bit-Defines für das Controllregister
  */
+ #define REG_CTRL_AUTO_CURRENT		2
  #define REG_CTRL_SET_LED			3
  #define REG_CTRL_BOOT				4	//!<Bit zum 
  #define REG_CTRL_EE_DEFAULTS		5	//!<Sollen die Defaultwerte aus dem EEPROM geladen werden beim Start?
@@ -101,6 +108,12 @@
   unsigned char		monitor_led_state;
   
   unsigned int		encoder_inp_mask;
+
+  unsigned char		max_heatsink_temp;
+ 
+  unsigned int		upper_bv_threshold;
+  unsigned int		lower_bv_threshold;
+
   
  /**
   * @var	uint32_t		baudrate

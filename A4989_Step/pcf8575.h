@@ -26,8 +26,8 @@
 	 struct
 	 {
 		 unsigned int  current			:4;								//Datenleitungen (P0 am Portexpander)
+		 unsigned int  current_sb		:4;								//Datenleitungen (P0 am Portexpander)
 		 unsigned int  microstep_decay	:4;								//Datenleitungen (P0 am Portexpander)
-		 unsigned int  sync_rect_mode	:4;								//Datenleitungen (P0 am Portexpander)
 		 unsigned int  ledn				:4;								//Datenleitungen (P0 am Portexpander)
 	 }val;
  }ENC_PORT;

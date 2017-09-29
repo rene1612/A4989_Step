@@ -15,8 +15,8 @@
 //#define __BOOT_CODE_START_ADDR__	(void *)0x1800
 
 
- #define __COMPILATION_DAY__		15UL
- #define __COMPILATION_MONTH__		8UL
+ #define __COMPILATION_DAY__		29UL
+ #define __COMPILATION_MONTH__		9UL
  #define __COMPILATION_YEAR__		2017UL
 
 
@@ -36,7 +36,7 @@
  *	- Byte 0 -> Minor-Nr.
  *	- BYTE 1 -> Mayor-Nr.
  */
- #define __SW_RELEASE__				0x0092
+ #define __SW_RELEASE__				0x0093
 
 
 /********************************************************************
@@ -88,14 +88,32 @@
 #define A4989_MS2		PB6
 #define A4989_RESET		PB3
 
+#define A4989_ENABLE		(PORTA &= ~_BV(A4989_EN))
+#define A4989_DISABLE		(PORTA |= _BV(A4989_EN))
+
+#define A4989_RESET_ENABLE	(PORTA &= ~_BV(A4989_RESET))
+#define A4989_RESET_DISABLE	(PORTA |= _BV(A4989_RESET))
+
+#define A4989_SR_ENABLE		(PORTA &= ~_BV(A4989_SR))
+#define A4989_SR_DISABLE	(PORTA |= _BV(A4989_SR))
+
 #define STEP_DIR		PB2
 #define STEP_ENA		PD2
 #define STEP_SYNC		PB1
 #define STEP_CLK		PB0
 
-#define PCF8575_INT				PD3
+#define PCF8575_INT_PIN			PIND3
 #define PCF8575_INT_DIR			DDRD
+#define STEP_ENA_INT_DIR		DDRD
+#define STEP_ENA_INT			INT0
+#define STEP_ENA_INPUT_PIN		PIND2
+#define STEP_ENA_INPUT			(PIND & (1<<STEP_ENA_INPUT_PIN))
 
+
+#define ENCODER_A_MASK		0x000F
+#define ENCODER_B_MASK		0x00F0
+#define ENCODER_C_MASK		0x0F00
+#define ENCODER_ALL_MASK	(ENCODER_A_MASK | ENCODER_B_MASK | ENCODER_C_MASK)
 
 // Define input pin to be used to detect UART activity
 #define UART_RXSCAN_DDR		DDRD
@@ -111,6 +129,7 @@
  #define DEFAULT_ALPHA_2			20		//!<Alpha 2 für gleitendes Mittel
 
 
+ #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
  #define DEFAULT_LOWER_BV_THRESHOLD	30000	//!<untere Boardspannungsschwelle
  #define DEFAULT_R1					980		//!<Spannungsteiler R1 in Ohm

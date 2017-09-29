@@ -20,10 +20,11 @@
 #include <avr/io.h>
 
 #include <avr/interrupt.h>
- 
+ #include "config.h"
 #include "state.h"
 
 #include "A4989_Step.h"
+#include "pcf8575.h"
 
 
 /**
@@ -40,6 +41,12 @@ unsigned int msec_counter;
  */
 unsigned char state_mask;
 
+/**
+ * @var		state_mask
+ * @brief	
+ *	
+ */
+unsigned char view_timer;
 
 
 /**
@@ -89,13 +96,14 @@ ISR(TIMER2_OVF_vect)
  */
  void init_StateMon(void)
 {
-	TCCR2 = 0x0A;
+	//TCCR2 = ((0<<COM21) | (0<<COM20) | (0<<WGM21) | (0<<WGM20) | (1<<CS22) | (1<<CS21) | (0<<CS20));
   
 	//GTCCR = 0;
 	TIMSK = (1<<TOIE2);
   
 	msec_counter = 0;
 	state_mask=1;
+	view_timer = 0;
 
 	main_regs.monitor_led_state = STATE_OFF;
 }
@@ -103,7 +111,7 @@ ISR(TIMER2_OVF_vect)
 
 
 /**
- * @fn		unsigned char set_State(unsigned char new_state)
+ * @fn		unsigned char set_StateMon(unsigned char new_state)
  * @brief	neuen Systemstatus setzen
  *
  * Ausführliche Beschreibung
@@ -115,14 +123,46 @@ ISR(TIMER2_OVF_vect)
  * @note	
  *
  */
- unsigned char set_State(unsigned char new_state)
+ unsigned char set_StateMon(unsigned char new_state)
 {
-	if( (new_state & 0x0F) <= (main_regs.monitor_led_state & 0x0F) )
-	{
+	//if( (new_state & 0x0F) <= (main_regs.monitor_led_state & 0x0F) )
+	//{
 		main_regs.monitor_led_state = new_state;
+		
+		if (new_state) {
+			
+			view_timer = 0;
+			TCCR2 = ((0<<COM21) | (0<<COM20) | (0<<WGM21) | (0<<WGM20) | (1<<CS22) | (1<<CS21) | (0<<CS20));
+			
+		}
 		return 1;
-	}
-	return 0;
+	//}
+	//return 0;
+}
+
+
+/**
+ * @fn		unsigned char set_StateMon(unsigned char new_state)
+ * @brief	neuen Systemstatus setzen
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param	new_state
+ *
+ * @return	TRUE | FALSE
+ *
+ * @note	
+ *
+ */
+ unsigned char set_LED(unsigned char led)
+{
+	unsigned int pcf8575_io_mask;
+
+	pcf8575_io_mask = ((~led << 12) | (main_regs.encoder_inp_mask & ENCODER_ALL_MASK));
+	pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
+	return 1;
+	//}
+	//return 0;
 }
 
 
@@ -143,6 +183,26 @@ ISR(TIMER2_OVF_vect)
 {
 		
 	//do something
+	switch (main_regs.monitor_led_state)
+	{
+		case STATE_ON:
+			set_LED(state_mask);
+			return 0;
+
+		case STATE_INFO_ENC_A:
+		case STATE_INFO_ENC_B:
+		case STATE_INFO_ENC_C:
+			if (!view_timer)
+				set_LED(pcf8575.val.encoder_a);
+			
+			if (++view_timer < 16)
+				return 0;
+			
+		case STATE_OFF:
+			set_LED(0x00);
+			TCCR2 = 0;
+			break;
+	}
 	
 	return 1;
 }

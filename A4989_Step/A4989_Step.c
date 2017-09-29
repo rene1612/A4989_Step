@@ -64,11 +64,17 @@ MAIN_REGS main_ee_regs EEMEM =
 {
 	//!<RW CTRL Ein-/Ausschalten usw.  (1 BYTE )
 	(0<<REG_CTRL_BOOT) | \
+	(1<<REG_CTRL_SET_LED) | \
+	(1<<REG_CTRL_AUTO_CURRENT) | \
 	(1<<REG_CTRL_EE_DEFAULTS),
 
 	0,
 	
 	0x0FFF,
+	
+	DEFAULT_MAX_HEATSINK_TEMP,
+	DEFAULT_UPPER_BV_THRESHOLD,
+	DEFAULT_LOWER_BV_THRESHOLD,
 	
 	APP_UART_BAUD_RATE,
 	
@@ -93,6 +99,46 @@ MAIN_REGS main_regs;
 SWITCH_PORT pcf8575;
 
 uint8_t main_task_scheduler;
+//uint8_t main_timer=0;
+//uint8_t timer0_ov_ticks=0;
+
+
+/************************************************************************
+ * @fn		ISR(INT0_vect)
+ * @brief	TWI Interrupt Handler
+ *
+ * This function is the Interrupt Service Routine (ISR), and called when
+ * the STEP_ENABLE interrupt is triggered;
+ *
+ * @note    
+ *		This function should not be called directly from the main application.
+ */
+ISR(INT0_vect)
+{
+	main_task_scheduler |= PROCESS_STEP_ENABLE;
+	return;
+}
+
+
+/************************************************************************
+ * @fn		ISR(SIG_OVERFLOW1)
+ * @brief	ISR für Zeittakt
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param   keine 
+ * @return	keine
+ */
+//ISR(TIMER0_OVF_vect)
+//{
+	//if (++timer0_ov_ticks > TIMER0_250_MS)
+	//{
+		//timer0_ov_ticks = 0;
+		//main_task_scheduler |= PROCESS_MONITOR_STATE;
+		//main_timer ++;
+	//}
+//}
+
 
 /************************************************************************
  * @fn		void init_Sys(void)
@@ -123,6 +169,14 @@ void init_Sys(void)
 	OCR1A	= 0x0010;
 	OCR1B	= 0x0020;
 	//ICR1 = 0x0010;
+	
+	//TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (0<<CS01) | (0<<CS00));
+	//TIMSK = (_BV(TOIE0));
+	
+	STEP_ENA_INT_DIR &= ~_BV(STEP_ENA_INPUT_PIN);	//Interupt-PIn auf Eingang
+	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
+	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT1
+	GICR |= _BV(INT0);						//INT1 activate
 
 	//TIMSK2 = ((1<<TOIE2));//(1<<TICIE1) | (1<<TOIE1)
 	//TCCR2A = ((1<<WGM21) | (1<<WGM20));
@@ -138,8 +192,11 @@ void init_Sys(void)
 	
 	DDRA=(_BV(A4989_EN) | _BV(A4989_SR));
 	DDRB=(_BV(A4989_PFD2) | _BV(A4989_PFD1) | _BV(A4989_MS2) | _BV(A4989_MS1) | _BV(A4989_RESET));
-	//DDRD=()		
-			
+	//DDRD=()
+	A4989_DISABLE;
+	A4989_SR_ENABLE;	//Synchronus Rectification always on		
+	A4989_RESET_ENABLE;
+		
 	if (eeprom_read_byte(&main_ee_regs.ctrl) & (1<<REG_CTRL_EE_DEFAULTS)) {
 		//Registerwerte aus dem EEProm restaurieren
 		eeprom_read_block ((void*)&main_regs, (const void*)&main_ee_regs, sizeof(MAIN_REGS));
@@ -209,14 +266,10 @@ int main (void) {
 	static unsigned char main_tmp_ctrl_reg=0x00;
 	signed char cur_heatsink_temperature;
 	unsigned int cur_vbus_volage;
-	unsigned int pcf8575_io_mask;
 	
 	//Systeminitialisierug
 	init_Sys();
 	
-	//Initialisierung des IO-Expanders Eingänge(Encoder), Ausgänge(LED)
-	pcf8575_io_mask = (0xF000 | main_regs.encoder_inp_mask);
-	pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
 
 	//Endlosschleife 
 	while(1) {
@@ -255,13 +308,17 @@ int main (void) {
 		
 		
 		 cur_heatsink_temperature = get_Temperature(SENSOR_TH_HEADSINK, DEFAULT_RTH_VOR);
-		 if (cur_heatsink_temperature > 50) {
-				jump_to_app();
+		 if (cur_heatsink_temperature > 55) {
+				//jump_to_app();
+				A4989_RESET_ENABLE;
+				set_StateMon(STATE_ERR_HEADSINK_TEMP);
 		 }
 		 
 		 cur_vbus_volage = get_VBusVoltage(SENSOR_POWER_VOLTAGE, DEFAULT_R1, DEFAULT_R2, DEFAULT_VREF);
 		 if (cur_vbus_volage < DEFAULT_LOWER_BV_THRESHOLD || cur_vbus_volage > DEFAULT_UPPER_BV_THRESHOLD) {
 				//jump_to_app();
+				A4989_RESET_ENABLE;
+				set_StateMon(STATE_ERR_VBUS_VOLTAGE);
 		 }
 		 
 		 if (main_task_scheduler & PROCESS_PCF8575){
@@ -272,6 +329,21 @@ int main (void) {
 		 if (main_task_scheduler & PROCESS_MONITOR_STATE){
 			 if (process_State())
 				main_task_scheduler &= ~PROCESS_MONITOR_STATE;
+		 }
+
+		 if (main_task_scheduler & PROCESS_STEP_ENABLE){
+			 
+			 if (!STEP_ENA_INPUT)
+			 {
+				 A4989_ENABLE; 
+				 set_StateMon(STATE_ON);
+			 }else
+			 {
+				 A4989_DISABLE;
+				 set_StateMon(STATE_OFF);
+			 }
+			 
+			 main_task_scheduler &= ~PROCESS_STEP_ENABLE;
 		 }
 
 	};

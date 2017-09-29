@@ -32,6 +32,7 @@
 #include "twi_master.h"
 #include "pcf8575.h"
 #include "pwm.h"
+#include "state.h"
 
 #include "A4989_Step.h"
 
@@ -48,13 +49,14 @@ ENC_PORT encoder;
  */
 void pcf8575_init (void)
 {
-	PCF8575_INT_DIR &= ~_BV(PCF8575_INT);	//Interupt-PIn auf Eingang
+	PCF8575_INT_DIR &= ~_BV(PCF8575_INT_PIN);	//Interupt-PIn auf Eingang
 
 	MCUCR &= ~((1<<ISC11) | (1<<ISC10));	//falling edge of INT1
 	MCUCR |= ((1<<ISC11) | (0<<ISC10));	//falling edge of INT1
 	GICR |= _BV(INT1);						//INT1 activate
 	
 	encoder.word = 0x0000;
+	
 }
 
 /************************************************************************
@@ -132,7 +134,7 @@ ISR(INT1_vect)
 unsigned char process_pcf8575(void)
 {
 	uint8_t temp_port;
-	unsigned int pcf8575_io_mask;
+	//unsigned int pcf8575_io_mask;
 	unsigned char temp[2];
 
 	GICR &= ~_BV(INT1);						//INT1 off
@@ -166,13 +168,19 @@ unsigned char process_pcf8575(void)
 		set_DAC((unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL);
 	
 		//Initialisierung des IO-Expanders Eingänge(Encoder), Ausgänge(LED)
-		pcf8575_io_mask = ((pcf8575.val.encoder_a << 12) | main_regs.encoder_inp_mask);
-		pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
+		//pcf8575_io_mask = ((pcf8575.val.encoder_a << 12) | (main_regs.encoder_inp_mask & ENCODER_ALL_MASK));
+		//pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
 		
+		//set_StateMon(STATE_INFO_ENC_A);
 	}
 		
-	if (pcf8575.val.encoder_b ^ encoder.val.microstep_decay){
-		encoder.val.microstep_decay = pcf8575.val.encoder_b;
+	if (pcf8575.val.encoder_b ^ encoder.val.current_sb){
+		
+		//set_StateMon(STATE_INFO_ENC_B);
+	}
+
+	if (pcf8575.val.encoder_c ^ encoder.val.microstep_decay){
+		encoder.val.microstep_decay = pcf8575.val.encoder_c;
 		
 		//Portpins setzen
 		temp_port = PINB & 0x0F;
@@ -180,15 +188,9 @@ unsigned char process_pcf8575(void)
 		temp_port |= ((encoder.val.microstep_decay & 0x08)<<(A4989_PFD2-3));
 		temp_port |= ((encoder.val.microstep_decay & 0x04)<<(A4989_PFD1-2));
 		PORTB = temp_port;
-	}
-
-	if (pcf8575.val.encoder_c ^ encoder.val.sync_rect_mode){
-		encoder.val.sync_rect_mode = pcf8575.val.encoder_c;
 		
-		//Portpins setzen
-		temp_port = PINA & 0xFE;
-		temp_port |= (encoder.val.sync_rect_mode & 0x01);
-		PORTA = temp_port;
+		//set_StateMon(STATE_INFO_ENC_C);
+
 	}
 
 	GICR |= _BV(INT1);						//INT1 activate
