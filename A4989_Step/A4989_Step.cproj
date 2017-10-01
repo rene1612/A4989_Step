@@ -103,7 +103,7 @@
   <avrgcc.compiler.symbols.DefSymbols>
     <ListValues>
       <Value>DEBUG</Value>
-      <Value>F_CPU=36864000</Value>
+      <Value>F_CPU=3686400</Value>
       <Value>RS485_DIR_SWITCH</Value>
     </ListValues>
   </avrgcc.compiler.symbols.DefSymbols>

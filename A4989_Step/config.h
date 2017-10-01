@@ -15,8 +15,8 @@
 //#define __BOOT_CODE_START_ADDR__	(void *)0x1800
 
 
- #define __COMPILATION_DAY__		29UL
- #define __COMPILATION_MONTH__		9UL
+ #define __COMPILATION_DAY__		1UL
+ #define __COMPILATION_MONTH__		10UL
  #define __COMPILATION_YEAR__		2017UL
 
 
@@ -91,8 +91,8 @@
 #define A4989_ENABLE		(PORTA &= ~_BV(A4989_EN))
 #define A4989_DISABLE		(PORTA |= _BV(A4989_EN))
 
-#define A4989_RESET_ENABLE	(PORTA &= ~_BV(A4989_RESET))
-#define A4989_RESET_DISABLE	(PORTA |= _BV(A4989_RESET))
+#define A4989_RESET_ENABLE	(PORTB &= ~_BV(A4989_RESET))
+#define A4989_RESET_DISABLE	(PORTB |= _BV(A4989_RESET))
 
 #define A4989_SR_ENABLE		(PORTA &= ~_BV(A4989_SR))
 #define A4989_SR_DISABLE	(PORTA |= _BV(A4989_SR))
@@ -132,8 +132,8 @@
  #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
  #define DEFAULT_LOWER_BV_THRESHOLD	30000	//!<untere Boardspannungsschwelle
- #define DEFAULT_R1					980		//!<Spannungsteiler R1 in Ohm
- #define DEFAULT_R2					10000	//!<Spannungsteiler R2 in Ohm
+ #define DEFAULT_R1					2200	//!<Spannungsteiler R1 in Ohm
+ #define DEFAULT_R2					47000	//!<Spannungsteiler R2 in Ohm
  #define DEFAULT_VREF				3378	//!<Default-Referenzspannung in mV
  #define DEFAULT_CURENT_SHUNT		25		//!<Default Widerstand für die Strommessung in mOhm)
  #define DEFAULT_CURRENT_OFFSET		2000	//!<Offset für Motorstrom in mA (Minimalstrom)
