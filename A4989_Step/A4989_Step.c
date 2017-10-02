@@ -68,7 +68,8 @@ MAIN_REGS main_ee_regs EEMEM =
 	(1<<REG_CTRL_AUTO_CURRENT) | \
 	(1<<REG_CTRL_EE_DEFAULTS),
 
-	0,
+	SYS_OK,
+	STATE_OFF,
 	
 	0x0FFF,
 	
@@ -222,6 +223,11 @@ void init_Sys(void)
 		else
 			ui_baudrate=UART_BAUD_SELECT(main_regs.baudrate, F_CPU);
 	}
+
+	//Interrupts anwerfen
+	sei();
+
+	init_ADC();
 	
 	uart_init( ui_baudrate );
 
@@ -233,7 +239,6 @@ void init_Sys(void)
 	
 	init_DAC(3);
 	
-	init_ADC();
 	
 	init_StateMon();
 
@@ -248,8 +253,6 @@ void init_Sys(void)
 
 	main_task_scheduler = PROCESS_PCF8575;
 	
-	//Interrupts anwerfen
-	sei();
 
 }
 
@@ -310,18 +313,34 @@ int main (void) {
 		
 		
 		 cur_heatsink_temperature = get_Temperature(SENSOR_TH_HEADSINK, DEFAULT_RTH_VOR);
-		 if (cur_heatsink_temperature > main_regs.max_heatsink_temp) {
+		 if (cur_heatsink_temperature > main_regs.max_heatsink_temp && main_regs.sys_state != SYS_ERROR ) {
 				//jump_to_app();
 				A4989_RESET_ENABLE;
+				main_regs.sys_state = SYS_ERROR;
 				set_StateMon(STATE_ERR_HEADSINK_TEMP);
 		 }
 		 
 		 cur_vbus_volage = get_VBusVoltage(SENSOR_POWER_VOLTAGE, DEFAULT_R1, DEFAULT_R2, DEFAULT_VREF);
-		 if (cur_vbus_volage < main_regs.lower_bv_threshold || cur_vbus_volage > main_regs.upper_bv_threshold) {
-				//jump_to_app();
-				A4989_RESET_ENABLE;
-				set_StateMon(STATE_ERR_VBUS_VOLTAGE);
+		 if (cur_vbus_volage)
+		 {
+			 if (cur_vbus_volage < main_regs.lower_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
+				 //jump_to_app();
+			 
+				 A4989_RESET_ENABLE;
+				 main_regs.sys_state = SYS_ERROR;
+				 set_StateMon(STATE_ERR_VBUS_VOLTAGE_LT);
+			 }
+
+			 if (cur_vbus_volage > main_regs.upper_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
+				 //jump_to_app();
+				 A4989_RESET_ENABLE;
+				 main_regs.sys_state = SYS_ERROR;
+				 set_StateMon(STATE_ERR_VBUS_VOLTAGE_UT);
+			 }
+			 
 		 }
+		 
+		 
 		 
 		 if (main_task_scheduler & PROCESS_PCF8575){
 			 if (process_pcf8575())

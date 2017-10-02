@@ -57,6 +57,10 @@ void pcf8575_init (void)
 	
 	encoder.word = 0x0000;
 	
+	pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
+	
+	encoder.word = pcf8575.word;
+	
 }
 
 /************************************************************************
@@ -134,7 +138,6 @@ ISR(INT1_vect)
 unsigned char process_pcf8575(void)
 {
 	uint8_t temp_port;
-	//unsigned int pcf8575_io_mask;
 	unsigned char temp[2];
 
 	GICR &= ~_BV(INT1);						//INT1 off
@@ -156,8 +159,6 @@ unsigned char process_pcf8575(void)
 			break;
 	}
 	while (1);
-	
-	//pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
 
 	//prüfen, welcher Encoder geändert wurde
 	
@@ -166,17 +167,14 @@ unsigned char process_pcf8575(void)
 		
 		//DAC für Stromeistellung updaten
 		set_DAC((unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL);
-	
-		//Initialisierung des IO-Expanders Eingänge(Encoder), Ausgänge(LED)
-		//pcf8575_io_mask = ((pcf8575.val.encoder_a << 12) | (main_regs.encoder_inp_mask & ENCODER_ALL_MASK));
-		//pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
 		
-		//set_StateMon(STATE_INFO_ENC_A);
+		set_StateMon(STATE_INFO_ENC_A);
 	}
 		
 	if (pcf8575.val.encoder_b ^ encoder.val.current_sb){
+		encoder.val.current_sb = pcf8575.val.encoder_b;
 		
-		//set_StateMon(STATE_INFO_ENC_B);
+		set_StateMon(STATE_INFO_ENC_B);
 	}
 
 	if (pcf8575.val.encoder_c ^ encoder.val.microstep_decay){
@@ -189,12 +187,11 @@ unsigned char process_pcf8575(void)
 		temp_port |= ((encoder.val.microstep_decay & 0x04)<<(A4989_PFD1-2));
 		PORTB = temp_port;
 		
-		//set_StateMon(STATE_INFO_ENC_C);
+		set_StateMon(STATE_INFO_ENC_C);
 
 	}
 
-	GICR |= _BV(INT1);						//INT1 activate
-	
+	GICR |= _BV(INT1);						//INT1 activate again
 	return TRUE;
 }
 

@@ -32,6 +32,7 @@
  * @brief	Zählervariable für den State-Timer
  */
 unsigned int msec_counter;
+unsigned int msec_counter_ticks;
 
 
 /**
@@ -48,6 +49,15 @@ unsigned char state_mask;
  */
 unsigned char view_timer;
 
+
+/**
+ * @var		old_state
+
+ * @brief	
+ *	
+ */
+unsigned char old_state;
+;
 
 /**
  * @fn		ISR(TIM2_OVF_vect)
@@ -70,6 +80,7 @@ ISR(TIMER2_OVF_vect)
 		if (++msec_counter >= STATE_TIMER_RESOLUTION )
 		{
 			msec_counter = 0;
+			msec_counter_ticks++;
 
 			state_mask<<=1;
 			if (!state_mask)
@@ -79,6 +90,30 @@ ISR(TIMER2_OVF_vect)
 
 		}
 	}
+}
+
+/**
+ * @fn		unsigned char set_StateMon(unsigned char new_state)
+ * @brief	neuen Systemstatus setzen
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param	new_state
+ *
+ * @return	TRUE | FALSE
+ *
+ * @note	
+ *
+ */
+ unsigned char set_LED(unsigned char led)
+{
+	unsigned int pcf8575_io_mask;
+
+	pcf8575_io_mask = ((~led << 12) | (main_regs.encoder_inp_mask & ENCODER_ALL_MASK));
+	pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
+	return 1;
+	//}
+	//return 0;
 }
 
 
@@ -102,10 +137,14 @@ ISR(TIMER2_OVF_vect)
 	TIMSK = (1<<TOIE2);
   
 	msec_counter = 0;
+	msec_counter_ticks = 0;
 	state_mask=1;
 	view_timer = 0;
 
 	main_regs.monitor_led_state = STATE_OFF;
+	old_state = STATE_OFF;
+	
+	set_LED(0);
 }
 
 
@@ -127,6 +166,7 @@ ISR(TIMER2_OVF_vect)
 {
 	//if( (new_state & 0x0F) <= (main_regs.monitor_led_state & 0x0F) )
 	//{
+		old_state = main_regs.monitor_led_state;
 		main_regs.monitor_led_state = new_state;
 		
 		if (new_state) {
@@ -136,31 +176,6 @@ ISR(TIMER2_OVF_vect)
 			
 		}
 		return 1;
-	//}
-	//return 0;
-}
-
-
-/**
- * @fn		unsigned char set_StateMon(unsigned char new_state)
- * @brief	neuen Systemstatus setzen
- *
- * Ausführliche Beschreibung
- *
- * @param	new_state
- *
- * @return	TRUE | FALSE
- *
- * @note	
- *
- */
- unsigned char set_LED(unsigned char led)
-{
-	unsigned int pcf8575_io_mask;
-
-	pcf8575_io_mask = ((~led << 12) | (main_regs.encoder_inp_mask & ENCODER_ALL_MASK));
-	pcf8575_write_to (PCF8575_TWI_DEV_ADDR, (unsigned char *)&pcf8575_io_mask);
-	return 1;
 	//}
 	//return 0;
 }
@@ -190,13 +205,41 @@ ISR(TIMER2_OVF_vect)
 			return 0;
 
 		case STATE_INFO_ENC_A:
-		case STATE_INFO_ENC_B:
-		case STATE_INFO_ENC_C:
 			if (!view_timer)
 				set_LED(pcf8575.val.encoder_a);
-			
 			if (++view_timer < 16)
-				return 0;
+				return 1;
+			
+			set_StateMon(old_state);
+			break;
+			
+		case STATE_INFO_ENC_B:
+			if (!view_timer)
+				set_LED(pcf8575.val.encoder_b);
+			if (++view_timer < 16)
+				return 1;
+			
+			set_StateMon(old_state);
+			break;
+			
+		case STATE_INFO_ENC_C:
+			if (!view_timer)
+				set_LED(pcf8575.val.encoder_c);
+			if (++view_timer < 16)
+				return 1;
+			
+			set_StateMon(old_state);
+			break;
+
+		case STATE_ERR_HEADSINK_TEMP:
+		case STATE_ERR_VBUS_VOLTAGE_UT:
+		case STATE_ERR_VBUS_VOLTAGE_LT:
+			if (msec_counter_ticks&0x01)
+				set_LED(main_regs.monitor_led_state&0x0F);
+			else
+				set_LED(0x00);
+			
+			break;
 			
 		case STATE_OFF:
 			set_LED(0x00);

@@ -82,7 +82,10 @@
 	 }val;
  }SWITCH_PORT;
 
-
+enum SYS_STATE{
+	SYS_OK,
+	SYS_ERROR,
+	};
 
 /**
  * @struct	REG
@@ -105,6 +108,7 @@
   */
   unsigned char		ctrl;
   
+  enum SYS_STATE	sys_state;
   unsigned char		monitor_led_state;
   
   unsigned int		encoder_inp_mask;

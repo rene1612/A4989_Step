@@ -46,8 +46,8 @@
  #define STATE_ERR_UNKNOWN			0x1F	//!<Zustand unbekannter Fehler (gleichmäßiges "sehr schnelles" Blinken Tastverhältnis 50/50)
  	
  #define STATE_ERR_HEADSINK_TEMP	0x11	//!<Zustand Fehler Kühlkörper-Temperatur zu hoch (einmal kurzes blinken)	
- #define STATE_ERR_VBUS_VOLTAGE		0x12	//!<Zustand Fehler Umgebungstemperatur zu hoch? (zweimaliges kurzes blinken)	
- #define STATE_ERR_EXT_OFF			0x14	//!<Zustand "Fehler" externe Komponente (z.B. CPLD) hat den Strahler hardwaremäßig deaktiviert (dreimaliges kurzes blinken)	
+ #define STATE_ERR_VBUS_VOLTAGE_UT	0x12	//!<Zustand Fehler Umgebungstemperatur zu hoch? (zweimaliges kurzes blinken)	
+ #define STATE_ERR_VBUS_VOLTAGE_LT	0x14	//!<Zustand "Fehler" externe Komponente (z.B. CPLD) hat den Strahler hardwaremäßig deaktiviert (dreimaliges kurzes blinken)	
 
  #define STATE_INFO_ENC_A			0x21	//!<Zustand "Information" Encoder A hat sich geändert und wird 2s angezeigt
  #define STATE_INFO_ENC_B			0x22	//!<Zustand "Information" Encoder A hat sich geändert und wird 2s angezeigt
