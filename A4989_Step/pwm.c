@@ -84,8 +84,9 @@
    }
   else
    {
-    OCR1A  = 0;
+    OCR1A  = 0x0000;
 	TIFR |= (1<<OCF1B); //TOV0
+	PORTD &= ~(1<<PD5);
     TCCR1B &= ~TCCR1_CLK_VAL_MASK; //Timer aus
    }
  }

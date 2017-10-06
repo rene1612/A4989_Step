@@ -77,6 +77,11 @@ MAIN_REGS main_ee_regs EEMEM =
 	DEFAULT_UPPER_BV_THRESHOLD,
 	DEFAULT_LOWER_BV_THRESHOLD,
 	
+	0x0000,
+	0x0000,
+	0x00,
+	0x0000,
+	
 	APP_UART_BAUD_RATE,
 	
 	//ab rel. 0x10 steht die Gerätesignatur und die Softwareversion
@@ -102,8 +107,8 @@ SWITCH_PORT pcf8575;
 uint8_t main_task_scheduler;
 //uint8_t main_timer=0;
 //uint8_t timer0_ov_ticks=0;
-	signed char cur_heatsink_temperature;
-	unsigned int cur_vbus_volage;
+//signed char cur_heatsink_temperature;
+//unsigned int cur_vbus_volage;
 
 
 /************************************************************************
@@ -251,11 +256,66 @@ void init_Sys(void)
 	SnapInit(nodeAddress1);
 #endif
 
-	main_task_scheduler = PROCESS_PCF8575;
-	
+	main_task_scheduler = 0;
 
 }
 
+
+/************************************************************************
+ * @fn		int set_sys_state (void)
+ * @brief	Hauptprogramm-Schleife
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param   keine 
+ * @return	Type int (never returns)
+ */
+uint8_t set_sys_state (enum SYS_STATE sys_state) {
+	uint8_t temp_port;
+	
+	switch (sys_state) {
+
+		case SYS_OK:
+		case SYS_ACTIVE_STOP:
+			A4989_RESET_ENABLE;
+			A4989_DISABLE;
+			//DAC für Stromeistellung updaten
+			set_DAC((unsigned int)0x0000);
+			main_regs.sys_state = SYS_OK;
+			break;
+
+		case SYS_ACTIVE_START:
+			//Portpins setzen
+			temp_port = PINB & 0x0F;
+			temp_port |= ((encoder.val.microstep_decay & 0x03)<<A4989_MS1);
+			temp_port |= ((encoder.val.microstep_decay & 0x08)<<(A4989_PFD2-3));
+			temp_port |= ((encoder.val.microstep_decay & 0x04)<<(A4989_PFD1-2));
+			PORTB = temp_port;
+			A4989_RESET_DISABLE;
+			A4989_ENABLE;
+		
+		case SYS_ACTIVE_SBC:
+			set_DAC(main_regs.standby_current);
+			main_regs.sys_state = SYS_ACTIVE_SBC;
+			set_StateMon(STATE_ON_SBC);
+
+			break;
+
+		case SYS_ACTIVE_FC:
+			set_DAC(main_regs.full_current);
+			main_regs.sys_state = SYS_ACTIVE_FC;
+			set_StateMon(STATE_ON_FC);
+			break;
+		
+		case SYS_ERROR:
+			A4989_RESET_ENABLE;
+			set_DAC((unsigned int)0x0000);
+			main_regs.sys_state = SYS_ERROR;
+			break;
+	}
+	
+	return 1;
+}
 
 /************************************************************************
  * @fn		int main (void)
@@ -274,7 +334,7 @@ int main (void) {
 	
 	//Systeminitialisierug
 	init_Sys();
-	
+
 
 	//Endlosschleife 
 	while(1) {
@@ -312,34 +372,25 @@ int main (void) {
 		}
 		
 		
-		 cur_heatsink_temperature = get_Temperature(SENSOR_TH_HEADSINK, DEFAULT_RTH_VOR);
-		 if (cur_heatsink_temperature > main_regs.max_heatsink_temp && main_regs.sys_state != SYS_ERROR ) {
-				//jump_to_app();
-				A4989_RESET_ENABLE;
-				main_regs.sys_state = SYS_ERROR;
-				set_StateMon(STATE_ERR_HEADSINK_TEMP);
+		 main_regs.cur_heatsink_temperature = get_Temperature(SENSOR_TH_HEADSINK, DEFAULT_RTH_VOR);
+		 if (main_regs.cur_heatsink_temperature > main_regs.max_heatsink_temp && main_regs.sys_state != SYS_ERROR ) {
+			set_sys_state (SYS_ERROR);
+			set_StateMon(STATE_ERR_HEADSINK_TEMP);
 		 }
 		 
-		 cur_vbus_volage = get_VBusVoltage(SENSOR_POWER_VOLTAGE, DEFAULT_R1, DEFAULT_R2, DEFAULT_VREF);
-		 if (cur_vbus_volage)
+		 main_regs.cur_vbus_volage = get_VBusVoltage(SENSOR_POWER_VOLTAGE, DEFAULT_R1, DEFAULT_R2, DEFAULT_VREF);
+		 if (main_regs.cur_vbus_volage)
 		 {
-			 if (cur_vbus_volage < main_regs.lower_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
-				 //jump_to_app();
-			 
-				 A4989_RESET_ENABLE;
-				 main_regs.sys_state = SYS_ERROR;
-				 set_StateMon(STATE_ERR_VBUS_VOLTAGE_LT);
+			 if (main_regs.cur_vbus_volage < main_regs.lower_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
+				set_sys_state (SYS_ERROR);
+				set_StateMon(STATE_ERR_VBUS_VOLTAGE_LT);
 			 }
 
-			 if (cur_vbus_volage > main_regs.upper_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
-				 //jump_to_app();
-				 A4989_RESET_ENABLE;
-				 main_regs.sys_state = SYS_ERROR;
-				 set_StateMon(STATE_ERR_VBUS_VOLTAGE_UT);
+			 if (main_regs.cur_vbus_volage > main_regs.upper_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
+				set_sys_state (SYS_ERROR);
+				set_StateMon(STATE_ERR_VBUS_VOLTAGE_UT);
 			 }
-			 
 		 }
-		 
 		 
 		 
 		 if (main_task_scheduler & PROCESS_PCF8575){
@@ -354,19 +405,19 @@ int main (void) {
 
 		 if (main_task_scheduler & PROCESS_STEP_ENABLE){
 			 
-			 if (!STEP_ENA_INPUT)
-			 {
-				A4989_RESET_DISABLE;
-				 A4989_ENABLE; 
-				 set_StateMon(STATE_ON);
-			 }else
-			 {
-				A4989_RESET_ENABLE;
-				 A4989_DISABLE;
-				 set_StateMon(STATE_OFF);
-			 }
+			if (main_regs.sys_state != SYS_ERROR) {
+				 if (!STEP_ENA_INPUT)
+				 {
+					set_sys_state (SYS_ACTIVE_START);
+					//set_StateMon(STATE_ON);
+				 }else
+				 {
+					set_sys_state (SYS_ACTIVE_STOP);
+					set_StateMon(STATE_OFF);
+				 }
+			}
 			 
-			 main_task_scheduler &= ~PROCESS_STEP_ENABLE;
+			main_task_scheduler &= ~PROCESS_STEP_ENABLE;
 		 }
 
 	};

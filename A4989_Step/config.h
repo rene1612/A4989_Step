@@ -58,7 +58,7 @@
  * @brief	Adressen 
  */
 #ifndef DEFAULT_DEV_ADDR
-	#define DEFAULT_DEV_ADDR	0x07
+	#define DEFAULT_DEV_ADDR	0x01
 #endif
 	
 #define BROADCAST_ADDR		0xFF
@@ -108,6 +108,8 @@
 #define STEP_ENA_INT			INT0
 #define STEP_ENA_INPUT_PIN		PIND2
 #define STEP_ENA_INPUT			(PIND & (1<<STEP_ENA_INPUT_PIN))
+#define STEP_DIR_INPUT_PIN		PINB2
+#define STEP_DIR_INPUT			(PINB & (1<<STEP_DIR_INPUT_PIN))
 
 
 #define ENCODER_A_MASK		0x000F
@@ -131,7 +133,7 @@
 
  #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
- #define DEFAULT_LOWER_BV_THRESHOLD	30000	//!<untere Boardspannungsschwelle
+ #define DEFAULT_LOWER_BV_THRESHOLD	26000	//!<untere Boardspannungsschwelle
  #define DEFAULT_R1					2200	//!<Spannungsteiler R1 in Ohm
  #define DEFAULT_R2					47000	//!<Spannungsteiler R2 in Ohm
  #define DEFAULT_VREF				3378	//!<Default-Referenzspannung in mV

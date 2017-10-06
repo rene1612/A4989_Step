@@ -16,8 +16,6 @@
 // Bemerkung	:  keine
 ///////////////////////////////////////////////////////////////////////////////////
 
-
-
 #include <stdio.h>
 #include <string.h>
 #include <avr/io.h>
@@ -60,6 +58,10 @@ void pcf8575_init (void)
 	pcf8575_read_from (PCF8575_TWI_DEV_ADDR, (unsigned char *)pcf8575.port);
 	
 	encoder.word = pcf8575.word;
+	
+	main_regs.full_current = (unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL;
+	main_regs.standby_current = (unsigned int)(encoder.val.current_sb*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL;
+
 	
 }
 
@@ -137,7 +139,6 @@ ISR(INT1_vect)
  */
 unsigned char process_pcf8575(void)
 {
-	uint8_t temp_port;
 	unsigned char temp[2];
 
 	GICR &= ~_BV(INT1);						//INT1 off
@@ -166,29 +167,30 @@ unsigned char process_pcf8575(void)
 		encoder.val.current = pcf8575.val.encoder_a;
 		
 		//DAC für Stromeistellung updaten
-		set_DAC((unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL);
-		
+		//set_DAC((unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL);
+		main_regs.full_current = (unsigned int)(encoder.val.current*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL;
 		set_StateMon(STATE_INFO_ENC_A);
 	}
 		
 	if (pcf8575.val.encoder_b ^ encoder.val.current_sb){
 		encoder.val.current_sb = pcf8575.val.encoder_b;
 		
-		set_StateMon(STATE_INFO_ENC_B);
+		if (encoder.val.current_sb <= encoder.val.current) {
+			main_regs.standby_current = (unsigned int)(encoder.val.current_sb*CURRENT_SET_FACTOR) + (unsigned int)CURRENT_OFFSET_VAL;
+
+			set_StateMon(STATE_INFO_ENC_B);
+		}
 	}
 
 	if (pcf8575.val.encoder_c ^ encoder.val.microstep_decay){
 		encoder.val.microstep_decay = pcf8575.val.encoder_c;
 		
-		//Portpins setzen
-		temp_port = PINB & 0x0F;
-		temp_port |= ((encoder.val.microstep_decay & 0x03)<<A4989_MS1);
-		temp_port |= ((encoder.val.microstep_decay & 0x08)<<(A4989_PFD2-3));
-		temp_port |= ((encoder.val.microstep_decay & 0x04)<<(A4989_PFD1-2));
-		PORTB = temp_port;
-		
 		set_StateMon(STATE_INFO_ENC_C);
+	}
 
+	//testhalber mit Encoder Fehler zurücksetzen	
+	if ( main_regs.sys_state == SYS_ERROR) {
+		set_sys_state(SYS_OK);
 	}
 
 	GICR |= _BV(INT1);						//INT1 activate again

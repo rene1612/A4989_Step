@@ -80,4 +80,7 @@ void pcf8575_init (void);
  */
 unsigned char process_pcf8575(void);
  
+ 
+extern ENC_PORT encoder;
+ 
 #endif

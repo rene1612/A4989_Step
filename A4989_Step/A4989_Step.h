@@ -84,6 +84,10 @@
 
 enum SYS_STATE{
 	SYS_OK,
+	SYS_ACTIVE_START,
+	SYS_ACTIVE_FC,
+	SYS_ACTIVE_SBC,
+	SYS_ACTIVE_STOP,
 	SYS_ERROR,
 	};
 
@@ -118,6 +122,10 @@ enum SYS_STATE{
   unsigned int		upper_bv_threshold;
   unsigned int		lower_bv_threshold;
 
+  unsigned int		full_current;
+  unsigned int		standby_current;
+  signed char		cur_heatsink_temperature;
+  unsigned int		cur_vbus_volage;
   
  /**
   * @var	uint32_t		baudrate
@@ -178,7 +186,7 @@ enum SYS_STATE{
  // Funktionen(Prototypes)
  //
  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+uint8_t set_sys_state (enum SYS_STATE sys_state);
 
 extern  MAIN_REGS main_regs;
 
