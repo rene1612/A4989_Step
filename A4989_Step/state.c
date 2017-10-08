@@ -66,20 +66,16 @@ unsigned char led_display_buffer[2][8] ={{0x01,0x02,0x08,0x04},{0x04,0x08,0x02,0
  */
 ISR(TIMER2_OVF_vect)
 {
-	//Status mit LED anzeigen?
-	if (main_regs.ctrl & (1<<REG_CTRL_SET_LED))
+	if (++msec_counter >= STATE_TIMER_RESOLUTION )
 	{
-		if (++msec_counter >= STATE_TIMER_RESOLUTION )
-		{
-			msec_counter = 0;
-			msec_counter_ticks++;
+		msec_counter = 0;
+		msec_counter_ticks++;
 
-			state_mask<<=1;
-			if (!state_mask)
-				state_mask = 1;
+		state_mask<<=1;
+		if (!state_mask)
+			state_mask = 1;
 				
-			main_task_scheduler |= PROCESS_MONITOR_STATE;
-		}
+		main_task_scheduler |= PROCESS_MONITOR_STATE;
 	}
 }
 

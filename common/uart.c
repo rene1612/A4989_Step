@@ -39,11 +39,9 @@ LICENSE:
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
-#include "uart.h"
+#include <uart.h>
+#include "snap.h"
 
-#ifdef __SNAP__
- #include "snap.h"
-#endif
 
 /*
  *  module global variables
@@ -79,12 +77,37 @@ Purpose:  called when the UART has received a character
     usr  = UART0_STATUS;
     data = UART0_DATA;
     
+    /* */
+
 	#if  defined( ATMEGA_USART )
 		lastRxError = (usr & (_BV(FE)|_BV(DOR)) );
 	#elif defined( ATMEGA_USART0 )
 		lastRxError = (usr & (_BV(FE0)|_BV(DOR0)) );
 	#endif
 
+#if defined ( __USE_SYNC__ )
+ #if defined( ATMEGA_USART ) 
+	if (usr & _BV(FE) && data==0x00)
+ #elif defined( ATMEGA_USART0 )	
+	if (usr & _BV(FE0) && data==0x00)
+ #else
+	#error Wrong U(S)ART!
+ #endif
+	
+	{
+		//assume we have a break -> start sync-process
+		DISABLE_UART_RECEIVER;
+		
+		EIFR |= _BV(INTF1);
+		
+		//Set INT1 to trigger on falling edge
+		INT1_ON_FALLING_EDGE;
+		
+		//INT1_ENABLE;
+	}
+    else
+	{  
+#endif	//__USE_SYNC__	  
 
 #if defined ( __SNAP__ )
 		if (!lastRxError)
@@ -106,6 +129,9 @@ Purpose:  called when the UART has received a character
 		UART_LastRxError |= lastRxError;
 #endif
 
+#if defined ( __USE_SYNC__ )
+	}
+#endif
 }
 
 

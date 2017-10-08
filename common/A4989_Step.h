@@ -50,21 +50,15 @@
 /**
  * Bit-Defines für das Controllregister
  */
- #define REG_CTRL_AUTO_CURRENT		2
- #define REG_CTRL_SET_LED			3
+ #define REG_CTRL_ACTIVATE			0
+ #define REG_CTRL_DEACTIVATE		1
+ #define REG_CTRL_ERROR_RESET		2
+ #define REG_CTRL_AUTO_CURRENT		3
  #define REG_CTRL_BOOT				4	//!<Bit zum 
  #define REG_CTRL_EE_DEFAULTS		5	//!<Sollen die Defaultwerte aus dem EEPROM geladen werden beim Start?
  #define REG_CTRL_WR_EEREGS			6	//!<EEProm-Register schreiben
  #define REG_CTRL_RESET				7	//!<Reset des Controllers auslösen
 
-
-/**
- * Bit-Defines für das Statusregister
- */
- #define REG_STATE_STOP			0	//!<Bit zeigt an, 
-
- 
- #ifndef __ASSEMBLER__
 
  typedef union   _SWITCH_PORT
  {
@@ -186,7 +180,7 @@ enum SYS_STATE{
  // Funktionen(Prototypes)
  //
  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-uint8_t set_sys_state (enum SYS_STATE sys_state);
+void set_sys_state (enum SYS_STATE sys_state);
 
 extern  MAIN_REGS main_regs;
 
@@ -194,5 +188,4 @@ extern SWITCH_PORT pcf8575;
 
 extern uint8_t main_task_scheduler;
 
- #endif
 #endif  

@@ -10,12 +10,12 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-//#define __BOOTLOADER_START_ADDR__	(void *)0x1C00
+#define __BOOTLOADER_START_ADDR__	(void *)0x1C00
 #define __APPLICATION_START_ADDR__	(void *)0x0000
-//#define __BOOT_CODE_START_ADDR__	(void *)0x1800
+#define __BOOT_CODE_START_ADDR__	(void *)0x1800
 
 
- #define __COMPILATION_DAY__		1UL
+ #define __COMPILATION_DAY__		6UL
  #define __COMPILATION_MONTH__		10UL
  #define __COMPILATION_YEAR__		2017UL
 
@@ -27,6 +27,13 @@
  */
  #define __DEV_SIGNATURE__			0xAB
 
+/********************************************************************
+ * @def		__BOOT_SIGNATURE__
+ * @brief	"eindeutige" Bootloaderkennung
+ *
+ * @see		
+ */
+ #define __BOOT_SIGNATURE__			0xCD
 
 /********************************************************************
  * @def		__SW_RELEASE__
@@ -36,7 +43,7 @@
  *	- Byte 0 -> Minor-Nr.
  *	- BYTE 1 -> Mayor-Nr.
  */
- #define __SW_RELEASE__				0x0093
+ #define __SW_RELEASE__				0x0094
 
 
 /********************************************************************
@@ -73,6 +80,11 @@
 #define APP_UART_BAUD_RATE     115200UL     /* Baudrate */
 //#define APP_UART_BAUD_RATE     38400     /* Baudrate */
 //#define APP_UART_BAUD_RATE     9600UL     /* Baudrate */
+
+//#define BOOT_UART_BAUD_RATE     38400     /* Baudrate */
+#define BOOT_UART_BAUD_RATE     115200UL     /* Baudrate */
+//#define BOOT_UART_BAUD_RATE     9600UL     /* Baudrate */
+//#define BOOT_UART_BAUD_RATE     2400UL     /* Baudrate */
 
 
 #define MAX_BAUDRATE			115200UL

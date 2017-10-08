@@ -22,7 +22,7 @@
     <ProgFlashFromRam>true</ProgFlashFromRam>
     <RamSnippetAddress>0x20000000</RamSnippetAddress>
     <UncachedRange />
-    <preserveEEPROM>true</preserveEEPROM>
+    <preserveEEPROM>false</preserveEEPROM>
     <OverrideVtorValue>exception_table</OverrideVtorValue>
     <BootSegment>2</BootSegment>
     <eraseonlaunchrule>0</eraseonlaunchrule>
@@ -42,7 +42,7 @@
     <com_atmel_avrdbg_tool_jtagicemkii>
       <ToolOptions>
         <InterfaceProperties>
-          <JtagDbgClock>199070</JtagDbgClock>
+          <JtagDbgClock>200000</JtagDbgClock>
           <JtagEnableExtResetOnStartSession>true</JtagEnableExtResetOnStartSession>
           <JtagInChain>false</JtagInChain>
           <JtagDevicesBefore>0</JtagDevicesBefore>
@@ -105,8 +105,15 @@
       <Value>DEBUG</Value>
       <Value>F_CPU=3686400</Value>
       <Value>RS485_DIR_SWITCH</Value>
+      <Value>UART_TX_BUFFER_SIZE=32</Value>
+      <Value>__SNAP__</Value>
     </ListValues>
   </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value>../../common</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
   <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
   <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
   <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
@@ -122,6 +129,18 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\common\crc.c">
+      <SubType>compile</SubType>
+      <Link>crc.c</Link>
+    </Compile>
+    <Compile Include="..\common\Snap.c">
+      <SubType>compile</SubType>
+      <Link>Snap.c</Link>
+    </Compile>
+    <Compile Include="..\common\uart.c">
+      <SubType>compile</SubType>
+      <Link>uart.c</Link>
+    </Compile>
     <Compile Include="A4989_Step.c">
       <SubType>compile</SubType>
     </Compile>
@@ -138,9 +157,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="twi_master.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="uart.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

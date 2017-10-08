@@ -37,13 +37,15 @@ SUBDIRS :=
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
+../../common/crc.c \
+../../common/Snap.c \
+../../common/uart.c \
 ../A4989_Step.c \
 ../adc.c \
 ../pcf8575.c \
 ../pwm.c \
 ../state.c \
-../twi_master.c \
-../uart.c
+../twi_master.c
 
 
 PREPROCESSING_SRCS += 
@@ -53,40 +55,48 @@ ASM_SRCS +=
 
 
 OBJS +=  \
+crc.o \
+Snap.o \
+uart.o \
 A4989_Step.o \
 adc.o \
 pcf8575.o \
 pwm.o \
 state.o \
-twi_master.o \
-uart.o
+twi_master.o
 
 OBJS_AS_ARGS +=  \
+crc.o \
+Snap.o \
+uart.o \
 A4989_Step.o \
 adc.o \
 pcf8575.o \
 pwm.o \
 state.o \
-twi_master.o \
-uart.o
+twi_master.o
 
 C_DEPS +=  \
+crc.d \
+Snap.d \
+uart.d \
 A4989_Step.d \
 adc.d \
 pcf8575.d \
 pwm.d \
 state.d \
-twi_master.d \
-uart.d
+twi_master.d
 
 C_DEPS_AS_ARGS +=  \
+crc.d \
+Snap.d \
+uart.d \
 A4989_Step.d \
 adc.d \
 pcf8575.d \
 pwm.d \
 state.d \
-twi_master.d \
-uart.d
+twi_master.d
 
 OUTPUT_FILE_PATH +=A4989_Step.elf
 
@@ -117,10 +127,21 @@ LINKER_SCRIPT_DEP+=
 
 
 
+
+
+
+
+./%.o: ../../common/%.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 4.8.1
+	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__SNAP__  -I"../../common"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
 ./%.o: .././%.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 4.8.1
-	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__SNAP__  -I"../../common"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
 	@echo Finished building: $<
 	
 

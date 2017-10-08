@@ -49,8 +49,25 @@
  * @fn		void (*jump_to_app)(void) = __APPLICATION_START_ADDR__
  * @brief	Einsprungspunkt für die Applikation
  */
-void (*jump_to_app)(void) = __APPLICATION_START_ADDR__;
+ void (*jump_to_app)(void) = __APPLICATION_START_ADDR__;
 
+ /**
+ * @fn		void (*jump_to_bootloader)(void) = __APPLICATION_START_ADDR__
+ * @brief	Einsprungspunkt für den Bootloader
+ */
+void (*jump_to_bootloader)(void) = __BOOTLOADER_START_ADDR__;
+
+
+
+/**
+ * @var		
+ * @brief	Registersatz im EEProm
+ * @see		REG
+ * @see		reg
+ *	
+ */
+ unsigned char dev_addr EEMEM = DEFAULT_DEV_ADDR;
+ unsigned char dev_addr_backup EEMEM = DEFAULT_DEV_ADDR;
 
 
 /**
@@ -64,7 +81,6 @@ MAIN_REGS main_ee_regs EEMEM =
 {
 	//!<RW CTRL Ein-/Ausschalten usw.  (1 BYTE )
 	(0<<REG_CTRL_BOOT) | \
-	(1<<REG_CTRL_SET_LED) | \
 	(1<<REG_CTRL_AUTO_CURRENT) | \
 	(1<<REG_CTRL_EE_DEFAULTS),
 
@@ -130,22 +146,25 @@ ISR(INT0_vect)
 
 /************************************************************************
  * @fn		ISR(SIG_OVERFLOW1)
- * @brief	ISR für Zeittakt
+ * @brief	ISR für step-pulse erkennung (automatische stromabsenkung)
  *
  * Ausführliche Beschreibung
  *
  * @param   keine 
  * @return	keine
  */
-//ISR(TIMER0_OVF_vect)
-//{
+ISR(TIMER0_OVF_vect)
+{
+	if (main_regs.sys_state == SYS_ACTIVE_SBC) {
+		set_sys_state (SYS_ACTIVE_FC);
+	}
 	//if (++timer0_ov_ticks > TIMER0_250_MS)
 	//{
 		//timer0_ov_ticks = 0;
 		//main_task_scheduler |= PROCESS_MONITOR_STATE;
 		//main_timer ++;
 	//}
-//}
+}
 
 
 /************************************************************************
@@ -171,36 +190,20 @@ void init_Sys(void)
 #endif
 
 #if defined(__AVR_ATmega32__) || defined (__AVR_ATmega16__)
-//	TIMSK1 = ((1<<TOIE1));//(1<<TICIE1) | (1<<TOIE1)
-	TCCR1A = ((0<<WGM11) | (1<<WGM10) | (1<<COM1A1) | (0<<COM1A0) | (1<<COM1B1) | (0<<COM1B0));
-	TCCR1B = ((0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (1<<WGM12) | (0<<CS12) | (1<<CS11) | (1<<CS10));//clkI/O/64 (From prescaler)
-	OCR1A	= 0x0010;
-	OCR1B	= 0x0020;
-	//ICR1 = 0x0010;
-	
-	//TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (0<<CS01) | (0<<CS00));
-	//TIMSK = (_BV(TOIE0));
+	//TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (0<<CS00));
+	TIMSK = (_BV(TOIE0));
 	
 	STEP_ENA_INT_DIR &= ~_BV(STEP_ENA_INPUT_PIN);	//Interupt-PIn auf Eingang
 	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
 	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT1
 	GICR |= _BV(INT0);						//INT1 activate
 
-	//TIMSK2 = ((1<<TOIE2));//(1<<TICIE1) | (1<<TOIE1)
-	//TCCR2A = ((1<<WGM21) | (1<<WGM20));
-	//TCCR2B = ((0<<FOC2A) | (0<<FOC2B) | (1<<WGM22) | (0<<CS22) | (0<<CS21) | (1<<CS20));//clkI/O/8 (From prescaler)
-	//OCR2A	= 0x40;
 #else
-	
+	#error Wrong AVR!
 #endif
 
-
-	//PWM_DDR |= (PWM_MASK(PWM_CH_0) | PWM_MASK(PWM_CH_1) | PWM_MASK(PWM_CH_2) | PWM_MASK(PWM_CH_3) | PWM_MASK(PWM_CH_4) | PWM_MASK(PWM_CH_5));
-	//EPWM_DDR |=	(EPWM_MASK(PWM_CH_6) | EPWM_MASK(PWM_CH_7));
-	
 	DDRA=(_BV(A4989_EN) | _BV(A4989_SR));
 	DDRB=(_BV(A4989_PFD2) | _BV(A4989_PFD1) | _BV(A4989_MS2) | _BV(A4989_MS1) | _BV(A4989_RESET));
-	//DDRD=()
 	A4989_DISABLE;
 	A4989_SR_ENABLE;	//Synchronus Rectification always on		
 	A4989_RESET_ENABLE;
@@ -236,14 +239,12 @@ void init_Sys(void)
 	
 	uart_init( ui_baudrate );
 
-
 	TWI_Master_Initialise();
 	
 	pcf8575_init ();
 	pcf8575.word = 0xFFFF;
 	
 	init_DAC(3);
-	
 	
 	init_StateMon();
 
@@ -263,14 +264,14 @@ void init_Sys(void)
 
 /************************************************************************
  * @fn		int set_sys_state (void)
- * @brief	Hauptprogramm-Schleife
+ * @brief	
  *
  * Ausführliche Beschreibung
  *
- * @param   keine 
- * @return	Type int (never returns)
+ * @param   enum SYS_STATE sys_state
+ * @return	
  */
-uint8_t set_sys_state (enum SYS_STATE sys_state) {
+void set_sys_state (enum SYS_STATE sys_state) {
 	uint8_t temp_port;
 	
 	switch (sys_state) {
@@ -282,6 +283,7 @@ uint8_t set_sys_state (enum SYS_STATE sys_state) {
 			//DAC für Stromeistellung updaten
 			set_DAC((unsigned int)0x0000);
 			main_regs.sys_state = SYS_OK;
+			set_StateMon(STATE_OFF);
 			break;
 
 		case SYS_ACTIVE_START:
@@ -299,7 +301,12 @@ uint8_t set_sys_state (enum SYS_STATE sys_state) {
 			main_regs.sys_state = SYS_ACTIVE_SBC;
 			set_StateMon(STATE_ON_SBC);
 
-			break;
+			if ( main_regs.ctrl & _BV(REG_CTRL_AUTO_CURRENT) ) {
+				TCNT0 = 0;
+				OCR0 = 1;
+				TCCR0 = ((0<<COM01) | (0<<COM00) | (1<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (0<<CS00));
+				break;
+			}
 
 		case SYS_ACTIVE_FC:
 			set_DAC(main_regs.full_current);
@@ -313,8 +320,6 @@ uint8_t set_sys_state (enum SYS_STATE sys_state) {
 			main_regs.sys_state = SYS_ERROR;
 			break;
 	}
-	
-	return 1;
 }
 
 /************************************************************************
@@ -329,8 +334,6 @@ uint8_t set_sys_state (enum SYS_STATE sys_state) {
 int main (void) {
 	
 	static unsigned char main_tmp_ctrl_reg=0x00;
-//	signed char cur_heatsink_temperature;
-//	unsigned int cur_vbus_volage;
 	
 	//Systeminitialisierug
 	init_Sys();
@@ -367,6 +370,33 @@ int main (void) {
 				_delay_ms(15);
 				jump_to_app();
    			}
+
+			if( main_regs.ctrl & (1<<REG_CTRL_BOOT) ) {
+				main_regs.ctrl &= ~(1<<REG_CTRL_BOOT);
+				
+				wdt_enable(WDTO_15MS);
+				while(1){};
+
+				//jump_to_bootloader();
+			}
+
+			if( main_regs.ctrl & (1<<REG_CTRL_ERROR_RESET) ) {
+				main_regs.ctrl &= ~(1<<REG_CTRL_ERROR_RESET);
+
+				set_sys_state (SYS_OK);
+			}
+
+			if( main_regs.ctrl & (1<<REG_CTRL_ACTIVATE) ) {
+				main_regs.ctrl &= ~(1<<REG_CTRL_ACTIVATE);
+
+				set_sys_state (SYS_ACTIVE_START);
+			}
+			
+			if( main_regs.ctrl & (1<<REG_CTRL_DEACTIVATE) ) {
+				main_regs.ctrl &= ~(1<<REG_CTRL_DEACTIVATE);
+
+				set_sys_state (SYS_ACTIVE_STOP);
+			}
 			   
 			main_tmp_ctrl_reg = main_regs.ctrl;
 		}
@@ -413,7 +443,7 @@ int main (void) {
 				 }else
 				 {
 					set_sys_state (SYS_ACTIVE_STOP);
-					set_StateMon(STATE_OFF);
+					//set_StateMon(STATE_OFF);
 				 }
 			}
 			 
