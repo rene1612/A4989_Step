@@ -116,7 +116,7 @@ ISR(TIMER2_OVF_vect)
  */
  void init_StateMon(void)
 {
-	TIMSK = (1<<TOIE2);
+	TIMSK |= (1<<TOIE2);
   
 	msec_counter = 0;
 	msec_counter_ticks = 0;

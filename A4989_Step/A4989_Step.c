@@ -153,7 +153,7 @@ ISR(INT0_vect)
  * @param   keine 
  * @return	keine
  */
-ISR(TIMER0_OVF_vect)
+ISR(TIMER0_COMP_vect)
 {
 	if (main_regs.sys_state == SYS_ACTIVE_SBC) {
 		set_sys_state (SYS_ACTIVE_FC);
@@ -191,7 +191,7 @@ void init_Sys(void)
 
 #if defined(__AVR_ATmega32__) || defined (__AVR_ATmega16__)
 	//TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (0<<CS00));
-	TIMSK = (_BV(TOIE0));
+	TIMSK |= (_BV(OCIE0));
 	
 	STEP_ENA_INT_DIR &= ~_BV(STEP_ENA_INPUT_PIN);	//Interupt-PIn auf Eingang
 	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
@@ -304,7 +304,7 @@ void set_sys_state (enum SYS_STATE sys_state) {
 			if ( main_regs.ctrl & _BV(REG_CTRL_AUTO_CURRENT) ) {
 				TCNT0 = 0;
 				OCR0 = 1;
-				TCCR0 = ((0<<COM01) | (0<<COM00) | (1<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (0<<CS00));
+				TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (1<<CS00));
 				break;
 			}
 
