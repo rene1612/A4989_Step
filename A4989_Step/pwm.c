@@ -45,22 +45,19 @@
  * @note	Die Frequenz freq des PWM-Signals sollte entspr. der RC-Tiefpassfilter(C15,R19) am Pin 2 (FBP) des LTC3783 eingestellt werden.
  * @note	Achtung: Die Pereiodendauer bzw. Frequenz des PWM-Signals kann nur mit gewisser Genauigkeit eingestellt werden (so grob).
  */
- void init_DAC(unsigned char freq)
+ void init_DAC(void)
  {
-  TCNT0  = 0x00;
+	TCNT0  = 0x00;
 
-  TCCR1A = ((1<<COM1A1) | (0<<COM1A0) |(1<<WGM11) | (1<<WGM10)); //PWM-Mode 3, Clear OC1A on Compare Match, set OC1A at TOP
+	TCCR1A = ((1<<COM1A1) | (0<<COM1A0) |(1<<WGM11) | (1<<WGM10)); //PWM-Mode 3, Clear OC1A on Compare Match, set OC1A at TOP
 
-  TCCR1B = 0x00; //Timer aus
+	TCCR1B = 0x00; //Timer aus
 
-  OCR1A  = 0x0000;
-  OCR1B  = 0x0000;
-  DDRD  |= (1<<PD5); //Pin 14 Auf Ausgang (OC1A)
+	OCR1A  = 0x0000;
+	OCR1B  = 0x0000;
+	DDRD  |= (1<<PD5); //Pin 14 Auf Ausgang (OC1A)
 
-  TCCR1_clk_val = (freq & TCCR1_CLK_VAL_MASK) | (1<<WGM12);
-  
-  if (TCCR1_clk_val > 5)
-   TCCR1_clk_val -= 2; 
+	TCCR1_clk_val = 0x02 | (1<<WGM12);
  }
 
 
@@ -79,12 +76,12 @@
  {
   if (dac_val)
    {
-    OCR1A  = dac_val;
-    TCCR1B |= TCCR1_clk_val; //Timer an
+    OCR1A  = (dac_val & 0x03FF);
+    TCCR1B = 0x03 | (1<<WGM12); //Timer an
    }
   else
    {
-    TCCR1B &= ~TCCR1_CLK_VAL_MASK; //Timer aus
+    TCCR1B = 0; //Timer aus
     OCR1A  = 0x0000;
 	TIFR |= (1<<OCF1B); //TOV0
 	PORTD &= ~(1<<PD5);

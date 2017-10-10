@@ -92,11 +92,15 @@ MAIN_REGS main_ee_regs EEMEM =
 	DEFAULT_MAX_HEATSINK_TEMP,
 	DEFAULT_UPPER_BV_THRESHOLD,
 	DEFAULT_LOWER_BV_THRESHOLD,
-	
+
+	DEFAULT_STANDBY_TIMEOUT,
+		
 	0x0000,
 	0x0000,
 	0x00,
 	0x0000,
+	0,
+	0,
 	
 	APP_UART_BAUD_RATE,
 	
@@ -125,7 +129,8 @@ uint8_t main_task_scheduler;
 //uint8_t timer0_ov_ticks=0;
 //signed char cur_heatsink_temperature;
 //unsigned int cur_vbus_volage;
-
+uint8_t standby_timer;
+uint8_t standby_timout;
 
 /************************************************************************
  * @fn		ISR(INT0_vect)
@@ -145,6 +150,23 @@ ISR(INT0_vect)
 
 
 /************************************************************************
+ * @fn		ISR(INT2_vect)
+ * @brief	Step_Dir Interrupt Handler
+ *
+ * This function is the Interrupt Service Routine (ISR), and called when
+ * the STEP_DIR interrupt is triggered;
+ *
+ * @note    
+ *		This function should not be called directly from the main application.
+ */
+ISR(INT2_vect)
+{
+	main_regs.step_dir = STEP_DIR_INPUT;
+	return;
+}
+
+
+/************************************************************************
  * @fn		ISR(SIG_OVERFLOW1)
  * @brief	ISR für step-pulse erkennung (automatische stromabsenkung)
  *
@@ -156,14 +178,35 @@ ISR(INT0_vect)
 ISR(TIMER0_OVF_vect)
 {
 	if (main_regs.sys_state == SYS_ACTIVE_SBC) {
+		OCR0 = 0xFF;
+		standby_timer=TCNT0;
+		TIMSK |= _BV(TOIE1);
 		set_sys_state (SYS_ACTIVE_FC);
 	}
-	//if (++timer0_ov_ticks > TIMER0_250_MS)
-	//{
-		//timer0_ov_ticks = 0;
-		//main_task_scheduler |= PROCESS_MONITOR_STATE;
-		//main_timer ++;
-	//}
+}
+
+
+/************************************************************************
+ * @fn		ISR(SIG_OVERFLOW1)
+ * @brief	ISR für step-pulse erkennung (automatische stromabsenkung)
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param   keine 
+ * @return	keine
+ */
+ISR(TIMER1_OVF_vect)
+{
+	if (TCNT0 == standby_timer) {
+		if (++standby_timout > main_regs.standby_timeout) {
+			TIMSK &= ~_BV(TOIE1);
+			set_sys_state (SYS_ACTIVE_SBC);
+		}
+	}
+	else {
+		standby_timer=TCNT0;
+		standby_timout=0;
+	}
 }
 
 
@@ -194,9 +237,9 @@ void init_Sys(void)
 	TIMSK = (_BV(TOIE0));
 	
 	STEP_ENA_INT_DIR &= ~_BV(STEP_ENA_INPUT_PIN);	//Interupt-PIn auf Eingang
-	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
-	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT1
-	GICR |= _BV(INT0);						//INT1 activate
+	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT0
+	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT0
+	GICR |= _BV(INT0) | _BV(INT2);						//INT0 & INT2 activate
 
 #else
 	#error Wrong AVR!
@@ -212,6 +255,9 @@ void init_Sys(void)
 		//Registerwerte aus dem EEProm restaurieren
 		eeprom_read_block ((void*)&main_regs, (const void*)&main_ee_regs, sizeof(MAIN_REGS));
 	}
+	
+	
+	main_regs.step_dir = STEP_DIR_INPUT;
 	
 	/* Einstellen der Baudrate */
 	//uart_init( UART_BAUD_SELECT_DOUBLE_SPEED(APP_UART_BAUD_RATE, F_CPU) );
@@ -244,7 +290,7 @@ void init_Sys(void)
 	pcf8575_init ();
 	pcf8575.word = 0xFFFF;
 	
-	init_DAC(3);
+	init_DAC();
 	
 	init_StateMon();
 
@@ -304,6 +350,7 @@ void set_sys_state (enum SYS_STATE sys_state) {
 			if ( main_regs.ctrl & _BV(REG_CTRL_AUTO_CURRENT) ) {
 				TCNT0 = 0;
 				OCR0 = 1;
+				standby_timout=0;
 				TCCR0 = ((0<<COM01) | (0<<COM00) | (1<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (0<<CS00));
 				break;
 			}

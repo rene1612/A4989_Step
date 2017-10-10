@@ -143,6 +143,7 @@
  #define DEFAULT_ALPHA_2			20		//!<Alpha 2 für gleitendes Mittel
 
 
+ #define DEFAULT_STANDBY_TIMEOUT	50		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
  #define DEFAULT_LOWER_BV_THRESHOLD	26000	//!<untere Boardspannungsschwelle

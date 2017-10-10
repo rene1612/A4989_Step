@@ -116,10 +116,15 @@ enum SYS_STATE{
   unsigned int		upper_bv_threshold;
   unsigned int		lower_bv_threshold;
 
+  unsigned char		standby_timeout;
+
   unsigned int		full_current;
   unsigned int		standby_current;
   signed char		cur_heatsink_temperature;
   unsigned int		cur_vbus_volage;
+  
+  unsigned char		step_dir;
+  long int			step_pulse_count;
   
  /**
   * @var	uint32_t		baudrate

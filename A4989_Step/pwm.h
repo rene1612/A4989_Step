@@ -20,7 +20,7 @@
 
 //! Prototypes
 
- void init_DAC(unsigned char freq);
+ void init_DAC(void);
 
  void set_DAC(unsigned int dac_val);
 
