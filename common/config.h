@@ -143,6 +143,9 @@
  #define DEFAULT_ALPHA_2			20		//!<Alpha 2 für gleitendes Mittel
 
 
+ #define DEFAULT_STANDBY_CURRENT_TIMEOUT_MS	800		//!<Timeout in ms
+  #define T1_TIMER_RESOLUTION	(F_CPU/1024)
+ #define DEFAULT_STANDBY_CURRENT_TIMEOUT	(T1_TIMER_RESOLUTION*DEFAULT_STANDBY_CURRENT_TIMEOUT_MS)/1000		//!<Timeout in ms
  #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
  #define DEFAULT_LOWER_BV_THRESHOLD	26000	//!<untere Boardspannungsschwelle

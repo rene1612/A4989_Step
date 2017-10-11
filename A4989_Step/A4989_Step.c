@@ -87,16 +87,21 @@ MAIN_REGS main_ee_regs EEMEM =
 	SYS_OK,
 	STATE_OFF,
 	
+	(0<<REG_SCAN_VBUS_LT) | (1<<REG_SCAN_VBUS_UT) | (1<<REG_SCAN_TEMP),
+	
 	0x0FFF,
 	
 	DEFAULT_MAX_HEATSINK_TEMP,
 	DEFAULT_UPPER_BV_THRESHOLD,
 	DEFAULT_LOWER_BV_THRESHOLD,
 	
+	DEFAULT_STANDBY_CURRENT_TIMEOUT,
+	
 	0x0000,
 	0x0000,
 	0x00,
 	0x0000,
+	0,
 	
 	APP_UART_BAUD_RATE,
 	
@@ -125,6 +130,10 @@ uint8_t main_task_scheduler;
 //uint8_t timer0_ov_ticks=0;
 //signed char cur_heatsink_temperature;
 //unsigned int cur_vbus_volage;
+unsigned long step_counter;
+
+uint8_t standby_timer;
+uint16_t standby_timout;
 
 
 /************************************************************************
@@ -143,6 +152,22 @@ ISR(INT0_vect)
 	return;
 }
 
+/************************************************************************
+ * @fn		ISR(INT2_vect)
+ * @brief	TWI Interrupt Handler
+ *
+ * This function is the Interrupt Service Routine (ISR), and called when
+ * the STEP_ENABLE interrupt is triggered;
+ *
+ * @note    
+ *		This function should not be called directly from the main application.
+ */
+ISR(INT2_vect)
+{
+	main_regs.step_dir = STEP_DIR_INPUT;
+	return;
+}
+
 
 /************************************************************************
  * @fn		ISR(SIG_OVERFLOW1)
@@ -156,16 +181,38 @@ ISR(INT0_vect)
 ISR(TIMER0_COMP_vect)
 {
 	if (main_regs.sys_state == SYS_ACTIVE_SBC) {
+		OCR0 = 0xFF;
+		standby_timer=TCNT0;
+		TIMSK |= _BV(TOIE1);
 		set_sys_state (SYS_ACTIVE_FC);
+		return;
 	}
-	//if (++timer0_ov_ticks > TIMER0_250_MS)
-	//{
-		//timer0_ov_ticks = 0;
-		//main_task_scheduler |= PROCESS_MONITOR_STATE;
-		//main_timer ++;
-	//}
+	
+	step_counter += 0xFF;
 }
 
+/************************************************************************
+ * @fn		ISR(SIG_OVERFLOW1)
+ * @brief	ISR für step-pulse erkennung (automatische stromabsenkung)
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param   keine 
+ * @return	keine
+ */
+ISR(TIMER1_OVF_vect)
+{
+	if (TCNT0 == standby_timer) {
+		if (++standby_timout > main_regs.standby_timeout) {
+			TIMSK &= ~_BV(TOIE1);
+			set_sys_state (SYS_ACTIVE_SBC);
+		}
+	}
+	else {
+		standby_timer=TCNT0;
+		standby_timout=0;
+	}
+}
 
 /************************************************************************
  * @fn		void init_Sys(void)
@@ -196,7 +243,7 @@ void init_Sys(void)
 	STEP_ENA_INT_DIR &= ~_BV(STEP_ENA_INPUT_PIN);	//Interupt-PIn auf Eingang
 	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
 	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT1
-	GICR |= _BV(INT0);						//INT1 activate
+	GICR |= _BV(INT0) | _BV(INT2);						//INT0 & INT2 activate
 
 #else
 	#error Wrong AVR!
@@ -212,6 +259,8 @@ void init_Sys(void)
 		//Registerwerte aus dem EEProm restaurieren
 		eeprom_read_block ((void*)&main_regs, (const void*)&main_ee_regs, sizeof(MAIN_REGS));
 	}
+	
+	main_regs.step_dir = STEP_DIR_INPUT;
 	
 	/* Einstellen der Baudrate */
 	//uart_init( UART_BAUD_SELECT_DOUBLE_SPEED(APP_UART_BAUD_RATE, F_CPU) );
@@ -302,6 +351,8 @@ void set_sys_state (enum SYS_STATE sys_state) {
 			set_StateMon(STATE_ON_SBC);
 
 			if ( main_regs.ctrl & _BV(REG_CTRL_AUTO_CURRENT) ) {
+				step_counter = 0;
+				standby_timout = 0;
 				TCNT0 = 0;
 				OCR0 = 1;
 				TCCR0 = ((0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<WGM00) | (1<<CS02) | (1<<CS01) | (1<<CS00));
@@ -403,22 +454,28 @@ int main (void) {
 		
 		
 		 main_regs.cur_heatsink_temperature = get_Temperature(SENSOR_TH_HEADSINK, DEFAULT_RTH_VOR);
-		 if (main_regs.cur_heatsink_temperature > main_regs.max_heatsink_temp && main_regs.sys_state != SYS_ERROR ) {
-			set_sys_state (SYS_ERROR);
-			set_StateMon(STATE_ERR_HEADSINK_TEMP);
+		 if ( (main_regs.scan_mask & (1<<REG_SCAN_TEMP)) && main_regs.cur_heatsink_temperature > main_regs.max_heatsink_temp) {
+			if (main_regs.sys_state != SYS_ERROR) {
+				set_sys_state (SYS_ERROR);
+				set_StateMon(STATE_ERR_HEADSINK_TEMP);
+			}
 		 }
 		 
 		 main_regs.cur_vbus_volage = get_VBusVoltage(SENSOR_POWER_VOLTAGE, DEFAULT_R1, DEFAULT_R2, DEFAULT_VREF);
-		 if (main_regs.cur_vbus_volage)
+		 if ( main_regs.cur_vbus_volage)
 		 {
-			 if (main_regs.cur_vbus_volage < main_regs.lower_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
-				set_sys_state (SYS_ERROR);
-				set_StateMon(STATE_ERR_VBUS_VOLTAGE_LT);
+			 if ((main_regs.scan_mask & (1<<REG_SCAN_VBUS_LT)) && main_regs.cur_vbus_volage < main_regs.lower_bv_threshold) {
+				if (main_regs.sys_state != SYS_ERROR ) {
+					set_sys_state (SYS_ERROR);
+					set_StateMon(STATE_ERR_VBUS_VOLTAGE_LT);
+				}
 			 }
 
-			 if (main_regs.cur_vbus_volage > main_regs.upper_bv_threshold && main_regs.sys_state != SYS_ERROR ) {
-				set_sys_state (SYS_ERROR);
-				set_StateMon(STATE_ERR_VBUS_VOLTAGE_UT);
+			 if ((main_regs.scan_mask & (1<<REG_SCAN_VBUS_UT)) && main_regs.cur_vbus_volage > main_regs.upper_bv_threshold) {
+				if (main_regs.sys_state != SYS_ERROR ) {
+					set_sys_state (SYS_ERROR);
+					set_StateMon(STATE_ERR_VBUS_VOLTAGE_UT);
+				}
 			 }
 		 }
 		 

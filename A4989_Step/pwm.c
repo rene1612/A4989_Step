@@ -27,7 +27,7 @@
  * @var		TCCR0_clk_val
  * @brief	Taktteiler für den PWM-Timer
  */
- unsigned int TCCR1_clk_val;
+// unsigned int TCCR1_clk_val;
 
 
 
@@ -57,10 +57,10 @@
   OCR1B  = 0x0000;
   DDRD  |= (1<<PD5); //Pin 14 Auf Ausgang (OC1A)
 
-  TCCR1_clk_val = (freq & TCCR1_CLK_VAL_MASK) | (1<<WGM12);
+  //TCCR1_clk_val = (freq & TCCR1_CLK_VAL_MASK) | (1<<WGM12);
   
-  if (TCCR1_clk_val > 5)
-   TCCR1_clk_val -= 2; 
+  //if (TCCR1_clk_val > 5)
+  // TCCR1_clk_val -= 2; 
  }
 
 
@@ -80,7 +80,8 @@
   if (dac_val)
    {
     OCR1A  = dac_val;
-    TCCR1B |= TCCR1_clk_val; //Timer an
+    //TCCR1B |= TCCR1_clk_val; //Timer an
+    TCCR1B = (1 + (1<<WGM12)); //Timer an
    }
   else
    {

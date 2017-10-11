@@ -31,8 +31,8 @@
  * @var		msec_counter
  * @brief	Zählervariable für den State-Timer
  */
-unsigned int msec_counter;
-unsigned int msec_counter_ticks;
+uint8_t msec_counter;
+uint8_t msec_counter_ticks;
 
 
 /**
@@ -40,7 +40,7 @@ unsigned int msec_counter_ticks;
  * @brief	
  *	
  */
-unsigned char state_mask;
+//unsigned char state_mask;
 
 /**
  * @var		state_mask
@@ -71,9 +71,9 @@ ISR(TIMER2_OVF_vect)
 		msec_counter = 0;
 		msec_counter_ticks++;
 
-		state_mask<<=1;
-		if (!state_mask)
-			state_mask = 1;
+		//state_mask<<=1;
+		//if (!state_mask)
+		//	state_mask = 1;
 				
 		main_task_scheduler |= PROCESS_MONITOR_STATE;
 	}
@@ -120,7 +120,7 @@ ISR(TIMER2_OVF_vect)
   
 	msec_counter = 0;
 	msec_counter_ticks = 0;
-	state_mask=1;
+	//state_mask=1;
 	view_timer = 0;
 
 	main_regs.monitor_led_state = STATE_OFF;

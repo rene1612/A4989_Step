@@ -59,6 +59,13 @@
  #define REG_CTRL_WR_EEREGS			6	//!<EEProm-Register schreiben
  #define REG_CTRL_RESET				7	//!<Reset des Controllers auslösen
 
+/**
+ * Bit-Defines für das Controllregister
+ */
+ #define REG_SCAN_TEMP			0
+ #define REG_SCAN_VBUS_LT		1
+ #define REG_SCAN_VBUS_UT		2
+
 
  typedef union   _SWITCH_PORT
  {
@@ -109,17 +116,23 @@ enum SYS_STATE{
   enum SYS_STATE	sys_state;
   unsigned char		monitor_led_state;
   
+  unsigned char		scan_mask;
+  
   unsigned int		encoder_inp_mask;
 
   unsigned char		max_heatsink_temp;
  
   unsigned int		upper_bv_threshold;
   unsigned int		lower_bv_threshold;
+  
+  unsigned int		standby_timeout;
 
   unsigned int		full_current;
   unsigned int		standby_current;
   signed char		cur_heatsink_temperature;
   unsigned int		cur_vbus_volage;
+  
+  unsigned char		step_dir;
   
  /**
   * @var	uint32_t		baudrate
