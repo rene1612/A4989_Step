@@ -15,7 +15,7 @@
 #define __BOOT_CODE_START_ADDR__	(void *)0x1800
 
 
- #define __COMPILATION_DAY__		6UL
+ #define __COMPILATION_DAY__		22UL
  #define __COMPILATION_MONTH__		10UL
  #define __COMPILATION_YEAR__		2017UL
 
@@ -43,7 +43,7 @@
  *	- Byte 0 -> Minor-Nr.
  *	- BYTE 1 -> Mayor-Nr.
  */
- #define __SW_RELEASE__				0x0094
+ #define __SW_RELEASE__				0x0095
 
 
 /********************************************************************
@@ -65,7 +65,7 @@
  * @brief	Adressen 
  */
 #ifndef DEFAULT_DEV_ADDR
-	#define DEFAULT_DEV_ADDR	0x01
+	#define DEFAULT_DEV_ADDR	0x03
 #endif
 	
 #define BROADCAST_ADDR		0xFF
