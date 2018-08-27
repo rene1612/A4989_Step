@@ -40,6 +40,19 @@ C_SRCS +=  \
 ../../common/crc.c \
 ../../common/Snap.c \
 ../../common/uart.c \
+../../modbus_rtu/functions/mbfunccoils.c \
+../../modbus_rtu/functions/mbfuncdiag.c \
+../../modbus_rtu/functions/mbfuncdisc.c \
+../../modbus_rtu/functions/mbfuncholding.c \
+../../modbus_rtu/functions/mbfuncinput.c \
+../../modbus_rtu/functions/mbfuncother.c \
+../../modbus_rtu/functions/mbutils.c \
+../../modbus_rtu/mb.c \
+../../modbus_rtu/port/mbcrc.c \
+../../modbus_rtu/port/portevent.c \
+../../modbus_rtu/port/portserial.c \
+../../modbus_rtu/port/porttimer.c \
+../../modbus_rtu/rtu/mbrtu.c \
 ../A4989_Step.c \
 ../adc.c \
 ../pcf8575.c \
@@ -58,6 +71,19 @@ OBJS +=  \
 crc.o \
 Snap.o \
 uart.o \
+mbfunccoils.o \
+mbfuncdiag.o \
+mbfuncdisc.o \
+mbfuncholding.o \
+mbfuncinput.o \
+mbfuncother.o \
+mbutils.o \
+mb.o \
+mbcrc.o \
+portevent.o \
+portserial.o \
+porttimer.o \
+mbrtu.o \
 A4989_Step.o \
 adc.o \
 pcf8575.o \
@@ -69,6 +95,19 @@ OBJS_AS_ARGS +=  \
 crc.o \
 Snap.o \
 uart.o \
+mbfunccoils.o \
+mbfuncdiag.o \
+mbfuncdisc.o \
+mbfuncholding.o \
+mbfuncinput.o \
+mbfuncother.o \
+mbutils.o \
+mb.o \
+mbcrc.o \
+portevent.o \
+portserial.o \
+porttimer.o \
+mbrtu.o \
 A4989_Step.o \
 adc.o \
 pcf8575.o \
@@ -80,6 +119,19 @@ C_DEPS +=  \
 crc.d \
 Snap.d \
 uart.d \
+mbfunccoils.d \
+mbfuncdiag.d \
+mbfuncdisc.d \
+mbfuncholding.d \
+mbfuncinput.d \
+mbfuncother.d \
+mbutils.d \
+mb.d \
+mbcrc.d \
+portevent.d \
+portserial.d \
+porttimer.d \
+mbrtu.d \
 A4989_Step.d \
 adc.d \
 pcf8575.d \
@@ -91,6 +143,19 @@ C_DEPS_AS_ARGS +=  \
 crc.d \
 Snap.d \
 uart.d \
+mbfunccoils.d \
+mbfuncdiag.d \
+mbfuncdisc.d \
+mbfuncholding.d \
+mbfuncinput.d \
+mbfuncother.d \
+mbutils.d \
+mb.d \
+mbcrc.d \
+portevent.d \
+portserial.d \
+porttimer.d \
+mbrtu.d \
 A4989_Step.d \
 adc.d \
 pcf8575.d \
@@ -131,17 +196,71 @@ LINKER_SCRIPT_DEP+=
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ./%.o: ../../common/%.c
 	@echo Building file: $<
-	@echo Invoking: AVR/GNU C Compiler : 4.8.1
-	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__SNAP__  -I"../../common"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./%.o: ../../modbus_rtu/functions/%.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./%.o: ../../modbus_rtu/%.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./%.o: ../../modbus_rtu/port/%.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+./%.o: ../../modbus_rtu/rtu/%.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
 	@echo Finished building: $<
 	
 
 ./%.o: .././%.c
 	@echo Building file: $<
-	@echo Invoking: AVR/GNU C Compiler : 4.8.1
-	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__SNAP__  -I"../../common"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG -DF_CPU=3686400 -DRS485_DIR_SWITCH -DUART_TX_BUFFER_SIZE=32 -D__MODBUS__ -DRTS_ENABLE  -I"../../common" -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\include" -I"../../modbus_rtu/include" -I"../../modbus_rtu/ascii" -I"../../modbus_rtu/port" -I"../../modbus_rtu/rtu"  -O1 -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g3 -Wall -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
 	@echo Finished building: $<
 	
 
@@ -169,14 +288,14 @@ all: $(OUTPUT_FILE_PATH) $(ADDITIONAL_DEPENDENCIES)
 
 $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER_SCRIPT_DEP)
 	@echo Building target: $@
-	@echo Invoking: AVR/GNU Linker : 4.8.1
-	$(QUOTE)C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="A4989_Step.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega16  
+	@echo Invoking: AVR/GNU Linker : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="A4989_Step.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega16 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.2.150\gcc\dev\atmega16"  
 	@echo Finished building target: $@
-	"C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "A4989_Step.elf" "A4989_Step.hex"
-	"C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "A4989_Step.elf" "A4989_Step.eep" || exit 0
-	"C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "A4989_Step.elf" > "A4989_Step.lss"
-	"C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "A4989_Step.elf" "A4989_Step.srec"
-	"C:\Program Files (x86)\Atmel\Atmel Toolchain\AVR8 GCC\Native\3.4.1061\avr8-gnu-toolchain\bin\avr-size.exe" "A4989_Step.elf"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "A4989_Step.elf" "A4989_Step.hex"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "A4989_Step.elf" "A4989_Step.eep" || exit 0
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "A4989_Step.elf" > "A4989_Step.lss"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "A4989_Step.elf" "A4989_Step.srec"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-size.exe" "A4989_Step.elf"
 	
 	
 

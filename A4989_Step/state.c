@@ -31,9 +31,8 @@
  * @var		msec_counter
  * @brief	Zählervariable für den State-Timer
  */
-uint8_t msec_counter;
-uint8_t msec_counter_ticks;
-
+uint8_t state_msec_counter;
+uint8_t state_msec_counter_ticks;
 
 /**
  * @var		state_mask
@@ -51,33 +50,6 @@ unsigned char view_timer;
 
 unsigned char led_display_buffer[2][8] ={{0x01,0x02,0x08,0x04},{0x04,0x08,0x02,0x01}};
 
-/**
- * @fn		ISR(TIM2_OVF_vect)
- * @brief	Timer-ISR
- *
- * Ausführliche Beschreibung
- *
- * @param	keine	
- *
- * @return	keine	
- *
- * @note	
- *
- */
-ISR(TIMER2_OVF_vect)
-{
-	if (++msec_counter >= STATE_TIMER_RESOLUTION )
-	{
-		msec_counter = 0;
-		msec_counter_ticks++;
-
-		//state_mask<<=1;
-		//if (!state_mask)
-		//	state_mask = 1;
-				
-		main_task_scheduler |= PROCESS_MONITOR_STATE;
-	}
-}
 
 /**
  * @fn		unsigned char set_StateMon(unsigned char new_state)
@@ -116,10 +88,11 @@ ISR(TIMER2_OVF_vect)
  */
  void init_StateMon(void)
 {
+	state_msec_counter = 0;
+	state_msec_counter_ticks = 0;
+
 	TIMSK |= (1<<TOIE2);
-  
-	msec_counter = 0;
-	msec_counter_ticks = 0;
+	
 	//state_mask=1;
 	view_timer = 0;
 
@@ -150,7 +123,6 @@ ISR(TIMER2_OVF_vect)
 	if (new_state) {
 		
 		view_timer = 0;
-		TCCR2 = ((0<<COM21) | (0<<COM20) | (0<<WGM21) | (0<<WGM20) | (1<<CS22) | (1<<CS21) | (0<<CS20));
 		
 	}
 	return 1;
@@ -178,17 +150,17 @@ ISR(TIMER2_OVF_vect)
 	{
 		case STATE_ON_FC:
 			if (STEP_DIR_INPUT)
-				set_LED(led_display_buffer[0][msec_counter_ticks&0x03]);
+				set_LED(led_display_buffer[0][state_msec_counter_ticks&0x03]);
 			else
-				set_LED(led_display_buffer[1][msec_counter_ticks&0x03]);
+				set_LED(led_display_buffer[1][state_msec_counter_ticks&0x03]);
 			return 1;
 
 		case STATE_ON_SBC:
 //			if (view_timer&0x01) {
 				if (STEP_DIR_INPUT)
-					set_LED(led_display_buffer[0][(msec_counter_ticks&0x06)>>1]);
+					set_LED(led_display_buffer[0][(state_msec_counter_ticks&0x06)>>1]);
 				else
-					set_LED(led_display_buffer[1][(msec_counter_ticks&0x06)>>1]);
+					set_LED(led_display_buffer[1][(state_msec_counter_ticks&0x06)>>1]);
 //			}
 //			view_timer++;
 			return 1;
@@ -223,7 +195,7 @@ ISR(TIMER2_OVF_vect)
 		case STATE_ERR_HEADSINK_TEMP:
 		case STATE_ERR_VBUS_VOLTAGE_UT:
 		case STATE_ERR_VBUS_VOLTAGE_LT:
-			if (msec_counter_ticks&0x01)
+			if (state_msec_counter_ticks&0x01)
 				set_LED(main_regs.monitor_led_state&0x0F);
 			else
 				set_LED(0x00);
@@ -232,10 +204,34 @@ ISR(TIMER2_OVF_vect)
 			
 		case STATE_OFF:
 			set_LED(0x00);
-			TCCR2 = 0;
+			//TCCR2 = 0;
 			break;
 	}
 	
 	return 1;
 }
 
+/**
+ * @fn		ISR(TIM2_OVF_vect)
+ * @brief	Timer-ISR kommt alle 8,8 ms
+ *
+ * Ausführliche Beschreibung
+ *
+ * @param	keine	
+ *
+ * @return	keine	
+ *
+ * @note	
+ *
+ */
+ISR(TIMER2_OVF_vect)
+{
+	if (main_regs.monitor_led_state) {
+		if (++state_msec_counter >= STATE_TIMER_RESOLUTION )
+		{
+			state_msec_counter = 0;
+			state_msec_counter_ticks++;
+			main_task_scheduler |= PROCESS_MONITOR_STATE;
+		}
+	}
+}

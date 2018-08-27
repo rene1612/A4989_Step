@@ -36,6 +36,26 @@
  #include "state.h"
  #include "pcf8575.h"
 
+#ifdef __MODBUS__
+	#include "mb.h"
+	#include "mbport.h"
+	#include "mbconfig.h"
+
+	/* ----------------------- Defines ------------------------------------------*/
+	#define REG_INPUT_START 1000
+	#define REG_INPUT_NREGS 4
+
+	#define REG_HOLDING_START 2000
+	#define REG_HOLDING_NREGS 4
+
+	#define COILS_START 0
+	#define COIL_CNT 1
+
+	/* ----------------------- Static variables ---------------------------------*/
+	static USHORT   usRegInputStart = REG_INPUT_START;
+	static USHORT   usRegInputBuf[REG_INPUT_NREGS];
+	static USHORT   usRegHoldingBuf[REG_HOLDING_NREGS]={0x0001,DEFAULT_RTH_VOR,0,0};
+#endif
 
  #ifdef __SNAP__
 	#include "snap.h"
@@ -136,6 +156,7 @@ uint8_t standby_timer;
 uint16_t standby_timout;
 
 
+
 /************************************************************************
  * @fn		ISR(INT0_vect)
  * @brief	TWI Interrupt Handler
@@ -200,6 +221,7 @@ ISR(TIMER0_COMP_vect)
  * @param   keine 
  * @return	keine
  */
+
 ISR(TIMER1_OVF_vect)
 {
 	if (TCNT0 == standby_timer) {
@@ -214,6 +236,10 @@ ISR(TIMER1_OVF_vect)
 	}
 }
 
+
+
+
+
 /************************************************************************
  * @fn		void init_Sys(void)
  * @brief	Systeminitialisierung
@@ -226,7 +252,15 @@ ISR(TIMER1_OVF_vect)
 void init_Sys(void)
 {
 	unsigned int ui_baudrate;
+#ifdef __MODBUS__
+    const UCHAR     ucSlaveID[] = { 0xAA, 0xBB, 0xCC };
+    eMBErrorCode    eStatus;
+#endif
+    
+    //CLKPR = (1 << CLKPCE); // enable a change to CLKPR
+    //CLKPR = 0; // set the CLKDIV to 0 - was 0011b = div by 8 taking 8MHz to 1MHz
 
+    
 #ifdef __USE_WDT__
 	//Watchdogtimer aktivieren  	WDTO_250MS
 	//wdt_enable(WDTO_60MS);
@@ -244,6 +278,7 @@ void init_Sys(void)
 	MCUCR &= ~((1<<ISC01) | (1<<ISC00));	//falling edge of INT1
 	MCUCR |= ((0<<ISC01) | (1<<ISC00));	//falling edge of INT1
 	GICR |= _BV(INT0) | _BV(INT2);						//INT0 & INT2 activate
+	TCCR2 = ((0<<COM21) | (0<<COM20) | (0<<WGM21) | (0<<WGM20) | (1<<CS22) | (0<<CS21) | (1<<CS20));
 
 #else
 	#error Wrong AVR!
@@ -286,7 +321,6 @@ void init_Sys(void)
 
 	init_ADC();
 	
-	uart_init( ui_baudrate );
 
 	TWI_Master_Initialise();
 	
@@ -296,8 +330,20 @@ void init_Sys(void)
 	init_DAC(3);
 	
 	init_StateMon();
+	
+#ifdef __MODBUS__
+	unsigned char nodeAddress1=eeprom_read_byte((uint8_t *)0x00);
+	unsigned char nodeAddress2=eeprom_read_byte((uint8_t *)0x01);
+	if(nodeAddress1!=nodeAddress2 || nodeAddress1==0 || nodeAddress1==0xFF)
+	nodeAddress1=BACKUP_DEV_ADDR;
+	eStatus = eMBInit( MB_RTU, nodeAddress1, 0, main_regs.baudrate, MB_PAR_EVEN );
+	eStatus = eMBSetSlaveID( 0x34, TRUE, ucSlaveID, 3 );
+	/* Enable the Modbus Protocol Stack. */
+	eStatus = eMBEnable(  );
+#endif
 
 #ifdef __SNAP__
+	uart_init( ui_baudrate );
 	unsigned char nodeAddress1=eeprom_read_byte((uint8_t *)0x00);
 	unsigned char nodeAddress2=eeprom_read_byte((uint8_t *)0x01);
 	if(nodeAddress1!=nodeAddress2 || nodeAddress1==0 || nodeAddress1==0xFF)
@@ -403,6 +449,10 @@ int main (void) {
 		if(SnapPacketReceived()){
 			SnapDecodeReceived((unsigned char *)& main_regs.ctrl);
 		}
+#endif
+
+#ifdef __MODBUS__
+        ( void )eMBPoll(  );
 #endif
 
 		//mal schauen, ob sich im CTRL-Register was geändert hat
@@ -511,3 +561,137 @@ int main (void) {
 
 	return 0;
 }
+
+
+#ifdef __MODBUS__
+eMBErrorCode
+eMBRegInputCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs )
+{
+	eMBErrorCode    eStatus = MB_ENOERR;
+	int             iRegIndex;
+
+	if( ( usAddress >= REG_INPUT_START )
+	&& ( usAddress + usNRegs <= REG_INPUT_START + REG_INPUT_NREGS ) )
+	{
+		
+		iRegIndex = ( int )( usAddress - usRegInputStart );
+		while( usNRegs > 0 )
+		{
+			*pucRegBuffer++ =
+			( unsigned char )( usRegInputBuf[iRegIndex] >> 8 );
+			*pucRegBuffer++ =
+			( unsigned char )( usRegInputBuf[iRegIndex] & 0xFF );
+			iRegIndex++;
+			usNRegs--;
+		}
+	}
+	else
+	{
+		eStatus = MB_ENOREG;
+	}
+
+	return eStatus;
+}
+
+eMBErrorCode
+eMBRegHoldingCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNRegs,
+eMBRegisterMode eMode )
+{
+	eMBErrorCode    eStatus = MB_ENOERR;
+	int             iRegIndex;
+
+	if( ( usAddress >= REG_HOLDING_START )
+	&& ( usAddress + usNRegs <= REG_HOLDING_START + REG_HOLDING_NREGS ) )
+	{
+		iRegIndex = ( int )( usAddress - REG_HOLDING_START );
+		while( usNRegs > 0 )
+		{
+			switch(eMode) {
+				case MB_REG_WRITE:
+				usRegHoldingBuf[iRegIndex] = *pucRegBuffer++;
+				usRegHoldingBuf[iRegIndex] <<= 8;
+				usRegHoldingBuf[iRegIndex] += *pucRegBuffer++;
+				break;
+				case MB_REG_READ:
+				default:
+				*pucRegBuffer++ =
+				( unsigned char )( usRegHoldingBuf[iRegIndex] >> 8 );
+				*pucRegBuffer++ =
+				( unsigned char )( usRegHoldingBuf[iRegIndex] & 0xFF );
+				break;
+			}
+			iRegIndex++;
+			usNRegs--;
+		}
+	}
+	else
+	{
+		eStatus = MB_ENOREG;
+	}
+
+	return eStatus;
+}
+
+/*
+eMBErrorCode
+eMBRegCoilsCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNCoils,
+eMBRegisterMode eMode )
+{
+	eMBErrorCode    eStatus = MB_ENOERR;
+	int             iRegIndex;
+	USHORT			coil_addr;
+	USHORT			cur_coil;
+	
+	coil_addr=usAddress-1;
+	
+	if( ( coil_addr >= COILS_START )
+	&& ( coil_addr + usNCoils <= COILS_START + COIL_CNT ) )
+	{
+		iRegIndex = 0;
+		cur_coil=0;
+		while( usNCoils > 0 )
+		{
+			switch(eMode) {
+				case MB_REG_WRITE:
+				
+				if (pucRegBuffer[iRegIndex]&_BV(cur_coil))
+					*(CoilList[coil_addr].pPort) |= CoilList[coil_addr].mask;
+				else
+					*(CoilList[coil_addr].pPort) &= ~CoilList[coil_addr].mask;
+					
+				break;
+				
+				case MB_REG_READ:
+				default:
+				
+				if(*(CoilList[coil_addr].pPin)&CoilList[coil_addr].mask)
+					pucRegBuffer[iRegIndex] |= _BV(cur_coil);
+				else
+					pucRegBuffer[iRegIndex] &= ~_BV(cur_coil);
+				
+				break;
+			}
+			
+			coil_addr++;
+			cur_coil++;
+			if(cur_coil>=8){
+				iRegIndex++;
+				cur_coil=0;
+			}
+			usNCoils--;
+		}
+	}
+	else
+	{
+		eStatus = MB_ENOREG;
+	}
+	return eStatus;
+}
+
+eMBErrorCode
+eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNDiscrete )
+{
+	return MB_ENOREG;
+}
+*/
+#endif

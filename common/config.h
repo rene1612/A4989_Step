@@ -15,9 +15,9 @@
 #define __BOOT_CODE_START_ADDR__	(void *)0x1800
 
 
- #define __COMPILATION_DAY__		22UL
- #define __COMPILATION_MONTH__		10UL
- #define __COMPILATION_YEAR__		2017UL
+ #define __COMPILATION_DAY__		25UL
+ #define __COMPILATION_MONTH__		8UL
+ #define __COMPILATION_YEAR__		2018UL
 
 
 
@@ -43,7 +43,7 @@
  *	- Byte 0 -> Minor-Nr.
  *	- BYTE 1 -> Mayor-Nr.
  */
- #define __SW_RELEASE__				0x0095
+ #define __SW_RELEASE__				0x0096
 
 
 /********************************************************************
@@ -144,8 +144,13 @@
 
 
  #define DEFAULT_STANDBY_CURRENT_TIMEOUT_MS	800		//!<Timeout in ms
-  #define T1_TIMER_RESOLUTION	(F_CPU/1024)
+ #define T1_TIMER_RESOLUTION	(F_CPU/1024)
  #define DEFAULT_STANDBY_CURRENT_TIMEOUT	(T1_TIMER_RESOLUTION*DEFAULT_STANDBY_CURRENT_TIMEOUT_MS)/1000		//!<Timeout in ms
+
+ //#define DEFAULT_STANDBY_CURRENT_TIMEOUT_MS	800		//!<Timeout in ms
+ //#define T2_TIMER_RESOLUTION	(F_CPU/128/256)
+ //#define DEFAULT_STANDBY_CURRENT_TIMEOUT	(T2_TIMER_RESOLUTION*DEFAULT_STANDBY_CURRENT_TIMEOUT_MS)/1000		//!<Timeout in ms
+ 
  #define DEFAULT_MAX_HEATSINK_TEMP	60		//!<obere Temperaturschwelle für den Kühlkörper
  #define DEFAULT_UPPER_BV_THRESHOLD	50000	//!<obere Boardspannungsschwelle
  #define DEFAULT_LOWER_BV_THRESHOLD	26000	//!<untere Boardspannungsschwelle
