@@ -81,7 +81,7 @@ eMBErrorCode
 eMBRTUInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
-    ULONG           usTimerT35_50us;
+    UCHAR           ucTimerT35_50us;
 
     ( void )ucSlaveAddress;
     ENTER_CRITICAL_SECTION(  );
@@ -98,21 +98,24 @@ eMBRTUInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity ePar
          */
         if( ulBaudRate > 19200 )
         {
-            usTimerT35_50us = 35;       /* 1800us. */
+            ucTimerT35_50us = 52;       /* 1800us. */
         }
+		else if ( ulBaudRate < 4800) {
+            ucTimerT35_50us = 255;       
+		}
         else
         {
             /* The timer reload value for a character is given by:
              *
              * ChTimeValue = Ticks_per_1s / ( Baudrate / 11 )
              *             = 11 * Ticks_per_1s / Baudrate
-             *             = 220000 / Baudrate
+             *             = 316800 / Baudrate
              * The reload for t3.5 is 1.5 times this value and similary
              * for t3.5.
              */
-            usTimerT35_50us = ( 7UL * 220000UL ) / ( 2UL * ulBaudRate );
+            ucTimerT35_50us = (UCHAR)(( 7UL * 316800UL ) / ( 2UL * ulBaudRate ));
         }
-        if( xMBPortTimersInit( ( USHORT ) usTimerT35_50us ) != TRUE )
+        if( xMBPortTimersInit( ( UCHAR ) ucTimerT35_50us ) != TRUE )
         {
             eStatus = MB_EPORTERR;
         }

@@ -39,7 +39,7 @@
 /* ----------------------- Static variables ---------------------------------*/
 //static USHORT   usTimerOCRADelta;
 //static USHORT   usTimerOCRBDelta;
-static UCHAR usTimerOCRDelta
+static UCHAR ucTimerOCRDelta;
 
 /* ----------------------- Start implementation -----------------------------*/
 BOOL
@@ -49,7 +49,8 @@ xMBPortTimersInit( UCHAR ucTimTimerout35us )
 //    usTimerOCRADelta =
 //        ( MB_TIMER_TICKS * usTim1Timerout50us ) / ( MB_50US_TICKS );
 		
-    usTimerOCRDelta = (UCHAR)(( MB_TIMER_TICKS * ucTimTimerout35us ) / ( MB_35US_TICKS ));
+//    ucTimerOCRDelta = (UCHAR)(( MB_TIMER_TICKS * ucTimTimerout35us ) / ( MB_35US_TICKS ));
+    ucTimerOCRDelta = ucTimTimerout35us;
 
 //    TCCR1A = 0x00;
 //    TCCR1B = 0x00;
@@ -65,9 +66,9 @@ inline void
 vMBPortTimersEnable(  )
 {
 //    TCNT1 = 0x0000;
-    if( usTimerOCRADelta > 0 )
+    if( ucTimerOCRDelta > 0 )
     {
-		TIMSK |= (1<<OCIE2:);
+		TIMSK |= (1<<OCIE2);
 //        TIMSK1 |= _BV( OCIE1A );
 //        OCR1A = usTimerOCRADelta;
         OCR2 = ucTimerOCRDelta + TCNT2;
